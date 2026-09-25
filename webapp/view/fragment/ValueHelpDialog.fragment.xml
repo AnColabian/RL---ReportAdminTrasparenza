@@ -1,0 +1,3 @@
+<core:FragmentDefinition xmlns:core="sap.ui.core" xmlns:vhd="sap.ui.comp.valuehelpdialog">
+    <vhd:ValueHelpDialog id="valueHelpDialog" title="{i18n>vhdTitle}" supportMultiselect="true" supportRanges="true" supportRangesOnly="false" key="key" descriptionKey="text" ok=".onValueHelpOk" cancel=".onValueHelpCancel" />
+</core:FragmentDefinition>
