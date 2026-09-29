@@ -8,6 +8,7 @@ sap.ui.define([
 ], function (Table, Engine, MetadataHelper, SelectionController, SortController, Sorter) {
     "use strict";
     return Table.extend("reportamministrazionetrasparenza.control.P13nGridTable", {
+        renderer: "sap.ui.table.TableRenderer",
         constructor: function (sId, mSettings) {
             Table.apply(this, arguments);
             this._oEngine = Engine.getInstance();

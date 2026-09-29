@@ -71,14 +71,13 @@
         </f:header>
         <f:content>
             <ctl:P13nGridTable id="resultsTable" rows="{reportModel>/results}" selectionMode="MultiToggle" enableSelectAll="true" rowSelectionChange=".onResultsSelectionChange" visibleRowCount="5">
-                <t:extension>
+                <ctl:extension>
                     <Toolbar id="resultsToolbar">
-                        <Title text="{i18n>reportTitle}" level="H4" />
+                        <Button id="btnExportSelection" text="{i18n>exportSelectionBtn}" icon="sap-icon://excel-attachment" type="Success" enabled="{viewModel>/exportEnabled}" press=".onExportSelection" />
                         <ToolbarSpacer />
                         <Button id="btnP13n" icon="sap-icon://action-settings" type="Transparent" tooltip="{i18n>p13nBtnTooltip}" press=".onP13nPress" />
-                        <Button id="btnExportSelection" text="{i18n>exportSelectionBtn}" icon="sap-icon://excel-attachment" type="Success" enabled="{viewModel>/exportEnabled}" press=".onExportSelection" />
                     </Toolbar>
-                </t:extension>
+                </ctl:extension>
                 <ctl:columns>
                     <t:Column width="6rem" customData:p13nKey="societa">
                         <Label text="{i18n>colSocieta}" />
