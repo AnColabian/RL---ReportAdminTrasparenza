@@ -13,6 +13,10 @@ sap.ui.define([
             this.getView().setModel(models.createViewModel(), "viewModel");
             this.getView().setModel(models.createSocietyModel(), "societyModel");
             this.getView().setModel(models.createTipoOggettoModel(), "tipoOggettoModel");
+            this.byId("resultsTable").setP13nTitle(this._i18n("p13nDialogTitle"));
+        },
+        onP13nPress: function (oEvent) {
+            this.byId("resultsTable").openP13n(oEvent);
         },
         onValueHelpUnitaEconomica: function () {
             this._sCurrentValueHelpField = "miFilterUnitaEconomica";
