@@ -115,12 +115,23 @@
           "target": [
             "TargetWorklist"
           ]
+        },
+        {
+          "name": "RouteHistory",
+          "pattern": "history",
+          "target": [
+            "TargetHistory"
+          ]
         }
       ],
       "targets": {
         "TargetWorklist": {
           "id": "Worklist",
           "name": "Worklist"
+        },
+        "TargetHistory": {
+          "id": "History",
+          "name": "History"
         }
       }
     },

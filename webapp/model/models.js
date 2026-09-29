@@ -159,6 +159,26 @@ sap.ui.define([
                     note: ""
                 }
             ];
-        }
+        },
+        createHistoryViewModel: function () {
+            var oModel = new JSONModel({
+                busy: false,
+                filterDataStoricizzazioneFrom: null,
+                filterDataStoricizzazioneTo: null,
+                filterUtente: [],
+                filterLayoutVariant: "",
+                exportEnabled: false
+            });
+            return oModel;
+        },
+        createHistoryModel: function () {
+            var oModel = new JSONModel({
+                results: []
+            });
+            return oModel;
+        },
+        createHistoryMockEntries: function () {
+            return this.createReportMockEntries();
+        },
     };
 });

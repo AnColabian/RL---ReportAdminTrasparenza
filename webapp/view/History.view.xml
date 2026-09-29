@@ -1,18 +1,18 @@
-<mvc:View controllerName="reportamministrazionetrasparenza.controller.Worklist"
+<mvc:View controllerName="reportamministrazionetrasparenza.controller.History"
     xmlns:mvc="sap.ui.core.mvc"
     xmlns="sap.m"
     xmlns:f="sap.f"
     xmlns:t="sap.ui.table"
     xmlns:l="sap.ui.layout"
     xmlns:core="sap.ui.core" displayBlock="true">
-    <f:DynamicPage id="pageWorklist" toggleHeaderOnTitleClick="false">
+    <f:DynamicPage id="pageHistory" toggleHeaderOnTitleClick="false">
         <f:title>
             <f:DynamicPageTitle>
                 <f:heading>
-                    <Title text="{i18n>reportTitle}" />
+                    <Title text="{i18n>storicoTitle}" />
                 </f:heading>
                 <f:actions>
-                    <Button text="{i18n>storicoBtn}" press=".onNavigateToHistory" />
+                    <Button text="{i18n>backBtn}" press=".onNavigateBack" />
                 </f:actions>
             </f:DynamicPageTitle>
         </f:title>
@@ -25,37 +25,16 @@
                             <l:content>
                                 <HBox alignItems="End" wrap="Wrap">
                                     <VBox class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
-                                        <Label text="{i18n>lblSocieta}" labelFor="cbFilterSocieta" />
-                                        <ComboBox id="cbFilterSocieta" selectedKey="{viewModel>/filterSociety}" items="{societyModel>/societies}" width="9rem">
-                                            <core:Item key="{societyModel>code}" text="{societyModel>text}" />
-                                        </ComboBox>
+                                        <Label text="{i18n>lblDataStoricizzazione}" labelFor="drsFilterDataStoricizzazione" />
+                                        <DateRangeSelection id="drsFilterDataStoricizzazione" dateValue="{historyViewModel>/filterDataStoricizzazioneFrom}" secondDateValue="{historyViewModel>/filterDataStoricizzazioneTo}" width="16rem" />
                                     </VBox>
                                     <VBox class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
-                                        <Label text="{i18n>lblUnitaEconomica}" labelFor="miFilterUnitaEconomica" />
-                                        <MultiInput id="miFilterUnitaEconomica" showValueHelp="true" valueHelpRequest=".onValueHelpUnitaEconomica" width="14rem">
+                                        <Label text="{i18n>lblUtente}" labelFor="miFilterUtente" />
+                                        <MultiInput id="miFilterUtente" showValueHelp="true" valueHelpRequest=".onValueHelpUtente" width="12rem">
                                             <tokens>
-                                                <Token key="{viewModel>key}" text="{viewModel>text}" />
+                                                <Token key="{historyViewModel>key}" text="{historyViewModel>text}" />
                                             </tokens>
                                         </MultiInput>
-                                    </VBox>
-                                    <VBox class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
-                                        <Label text="{i18n>lblTipoOggetto}" labelFor="miFilterTipoOggetto" />
-                                        <MultiInput id="miFilterTipoOggetto" showValueHelp="true" valueHelpRequest=".onValueHelpTipoOggetto" width="9rem">
-                                            <tokens>
-                                                <Token key="{viewModel>key}" text="{viewModel>text}" />
-                                            </tokens>
-                                        </MultiInput>
-                                    </VBox>
-                                    <VBox class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
-                                        <Label text="{i18n>lblOggettoArchitettonico}" labelFor="miFilterOggettoArchitettonico" />
-                                        <MultiInput id="miFilterOggettoArchitettonico" showValueHelp="true" valueHelpRequest=".onValueHelpOggettoArchitettonico" width="14rem">
-                                            <tokens>
-                                                <Token key="{viewModel>key}" text="{viewModel>text}" />
-                                            </tokens>
-                                        </MultiInput>
-                                    </VBox>
-                                    <VBox justifyContent="End" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
-                                        <CheckBox text="{i18n>lblTest}" selected="{viewModel>/filterTest}" />
                                     </VBox>
                                     <VBox justifyContent="End" class="sapUiSmallMarginBottom">
                                         <Button text="{i18n>eseguiBtn}" type="Emphasized" press=".onExecute" />
@@ -63,322 +42,337 @@
                                 </HBox>
                             </l:content>
                         </l:HorizontalLayout>
+                        <!--
+                        <Title text="{i18n>layoutOutputTitle}" level="H4" class="sapuiSmallMarginTop sapuiSmallMarginBottom" />
+                        <l:HorizontalLayout allowWrapping="true">
+                            <l:content>
+                                <HBox alignItems="End" wrap="Wrap">
+                                    <VBox class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                                        <Label text="{i18n>lblVarianteLayout}" labelFor="ipFilterLayoutVariant" />
+                                        <Input id="ipFilterLayoutVariant" value="{historyViewModel>/filterLayoutVariant}" width="12rem" />
+                                    </VBox>
+                                </HBox>
+                            </l:content>
+                        </l:HorizontalLayout>
+                        -->
                     </VBox>
                 </f:content>
             </f:DynamicPageHeader>
         </f:header>
         <f:content>
-            <t:Table id="resultsTable" rows="{reportModel>/results}" selectionMode="MultiToggle" enableSelectAll="true" rowSelectionChange=".onResultsSelectionChange" visibleRowCount="5" showColumnVisibilityMenu="true">
+            <t:Table id="historyTable" rows="{historyModel>/results}" selectionMode="MultiToggle" enableSelectAll="true" rowSelectionChange=".onResultsSelectionChange" visibleRowCount="5">
                 <t:extension>
-                    <Toolbar id="resultsToolbar">
-                        <Button id="btnExportSelection" text="{i18n>exportSelectionBtn}" icon="sap-icon://excel-attachment" type="Success" enabled="{viewModel>/exportEnabled}" press=".onExportSelection" />
+                    <Toolbar id="historyToolbar">
+                        <Title text="{i18n>storicoTitle}" level="H4" />
+                        <ToolbarSpacer />
+                        <Button id="btnExportHistorySelection" text="{i18n>exportSelectionBtn}" icon="sap-icon://excel-attachment" type="Success" enabled="{historyViewModel>/exportEnabled}" press=".onExportSelection" />
                     </Toolbar>
                 </t:extension>
                 <t:columns>
-                    <t:Column width="6rem" sortProperty="societa">
+                    <t:Column width="6rem">
                         <Label text="{i18n>colSocieta}" />
                         <t:template>
-                            <Text text="{reportModel>societa}" />
+                            <Text text="{historyModel>societa}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem" sortProperty="unitaEconomica">
+                    <t:Column width="9rem">
                         <Label text="{i18n>colUnitaEconomica}" />
                         <t:template>
-                            <Text text="{reportModel>unitaEconomica}" />
+                            <Text text="{historyModel>unitaEconomica}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="8rem" sortProperty="compendio">
+                    <t:Column width="8rem">
                         <Label text="{i18n>colCompendio}" />
                         <t:template>
-                            <Text text="{reportModel>compendio}" />
+                            <Text text="{historyModel>compendio}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="10rem" sortProperty="descrizTipoComp">
+                    <t:Column width="10rem">
                         <Label text="{i18n>colDescrizTipoComp}" />
                         <t:template>
-                            <Text text="{reportModel>descrizTipoComp}" />
+                            <Text text="{historyModel>descrizTipoComp}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="12rem" sortProperty="definizioneUE">
+                    <t:Column width="12rem">
                         <Label text="{i18n>colDefinizioneUE}" />
                         <t:template>
-                            <Text text="{reportModel>definizioneUE}" />
+                            <Text text="{historyModel>definizioneUE}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="12rem" sortProperty="descrBenePatrimoniale">
+                    <t:Column width="12rem">
                         <Label text="{i18n>colDescrBenePatrimoniale}" />
                         <t:template>
-                            <Text text="{reportModel>descrBenePatrimoniale}" />
+                            <Text text="{historyModel>descrBenePatrimoniale}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="12rem" sortProperty="descrNaturaGiuridica">
+                    <t:Column width="12rem">
                         <Label text="{i18n>colDescrNaturaGiuridica}" />
                         <t:template>
-                            <Text text="{reportModel>descrNaturaGiuridica}" />
+                            <Text text="{historyModel>descrNaturaGiuridica}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="12rem" sortProperty="descrTitoloUtilizzo">
+                    <t:Column width="12rem">
                         <Label text="{i18n>colDescrTitoloUtilizzo}" />
                         <t:template>
-                            <Text text="{reportModel>descrTitoloUtilizzo}" />
+                            <Text text="{historyModel>descrTitoloUtilizzo}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem" sortProperty="via">
+                    <t:Column width="9rem">
                         <Label text="{i18n>colVia}" />
                         <t:template>
-                            <Text text="{reportModel>via}" />
+                            <Text text="{historyModel>via}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="7rem" sortProperty="numeroCivico">
+                    <t:Column width="7rem">
                         <Label text="{i18n>colNumeroCivico}" />
                         <t:template>
-                            <Text text="{reportModel>numeroCivico}" />
+                            <Text text="{historyModel>numeroCivico}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="6rem" sortProperty="cap">
+                    <t:Column width="6rem">
                         <Label text="{i18n>colCap}" />
                         <t:template>
-                            <Text text="{reportModel>cap}" />
+                            <Text text="{historyModel>cap}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem" sortProperty="localita">
+                    <t:Column width="9rem">
                         <Label text="{i18n>colLocalita}" />
                         <t:template>
-                            <Text text="{reportModel>localita}" />
+                            <Text text="{historyModel>localita}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="6rem" sortProperty="regione">
+                    <t:Column width="6rem">
                         <Label text="{i18n>colRegione}" />
                         <t:template>
-                            <Text text="{reportModel>regione}" />
+                            <Text text="{historyModel>regione}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem" sortProperty="chiavePaesiRegioni">
+                    <t:Column width="9rem">
                         <Label text="{i18n>colChiavePaesiRegioni}" />
                         <t:template>
-                            <Text text="{reportModel>chiavePaesiRegioni}" />
+                            <Text text="{historyModel>chiavePaesiRegioni}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="10rem" sortProperty="oggettoArchitett">
+                    <t:Column width="10rem">
                         <Label text="{i18n>colOggettoArchitett}" />
                         <t:template>
-                            <Text text="{reportModel>oggettoArchitett}" />
+                            <Text text="{historyModel>oggettoArchitett}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem" sortProperty="tipoOggArchitett">
+                    <t:Column width="9rem">
                         <Label text="{i18n>colTipoOggArchitett}" />
                         <t:template>
-                            <Text text="{reportModel>tipoOggArchitett}" />
+                            <Text text="{historyModel>tipoOggArchitett}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="10rem" sortProperty="defOggArch">
+                    <t:Column width="10rem">
                         <Label text="{i18n>colDefOggArch}" />
                         <t:template>
-                            <Text text="{reportModel>defOggArch}" />
+                            <Text text="{historyModel>defOggArch}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="8rem" sortProperty="funzione">
+                    <t:Column width="8rem">
                         <Label text="{i18n>colFunzione}" />
                         <t:template>
-                            <Text text="{reportModel>funzione}" />
+                            <Text text="{historyModel>funzione}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem" sortProperty="businessPartner">
+                    <t:Column width="9rem">
                         <Label text="{i18n>colBusinessPartner}" />
                         <t:template>
-                            <Text text="{reportModel>businessPartner}" />
+                            <Text text="{historyModel>businessPartner}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="12rem" sortProperty="denominazioneDitta">
+                    <t:Column width="12rem">
                         <Label text="{i18n>colDenominazioneDitta}" />
                         <t:template>
-                            <Text text="{reportModel>denominazioneDitta}" />
+                            <Text text="{historyModel>denominazioneDitta}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="12rem" sortProperty="descrTpEdifTerr">
+                    <t:Column width="12rem">
                         <Label text="{i18n>colDescrTpEdifTerr}" />
                         <t:template>
-                            <Text text="{reportModel>descrTpEdifTerr}" />
+                            <Text text="{historyModel>descrTpEdifTerr}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="12rem" sortProperty="descrBeneCulturale">
+                    <t:Column width="12rem">
                         <Label text="{i18n>colDescrBeneCulturale}" />
                         <t:template>
-                            <Text text="{reportModel>descrBeneCulturale}" />
+                            <Text text="{historyModel>descrBeneCulturale}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem" sortProperty="idCatCatastale">
+                    <t:Column width="9rem">
                         <Label text="{i18n>colIdCatCatastale}" />
                         <t:template>
-                            <Text text="{reportModel>idCatCatastale}" />
+                            <Text text="{historyModel>idCatCatastale}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem" hAlign="End" sortProperty="percentRivalutaz">
+                    <t:Column width="9rem" hAlign="End">
                         <Label text="{i18n>colPercentRivalutaz}" />
                         <t:template>
-                            <Text text="{reportModel>percentRivalutaz}" />
+                            <Text text="{historyModel>percentRivalutaz}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem" hAlign="End" sortProperty="coeffRivalutaz">
+                    <t:Column width="9rem" hAlign="End">
                         <Label text="{i18n>colCoeffRivalutaz}" />
                         <t:template>
-                            <Text text="{reportModel>coeffRivalutaz}" />
+                            <Text text="{historyModel>coeffRivalutaz}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="12rem" sortProperty="notaAddizionaleImmobile">
+                    <t:Column width="12rem">
                         <Label text="{i18n>colNotaAddizionaleImmobile}" />
                         <t:template>
-                            <Text text="{reportModel>notaAddizionaleImmobile}" />
+                            <Text text="{historyModel>notaAddizionaleImmobile}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="8rem" sortProperty="stAccatastam">
+                    <t:Column width="8rem">
                         <Label text="{i18n>colStAccatastam}" />
                         <t:template>
-                            <Text text="{reportModel>stAccatastam}" />
+                            <Text text="{historyModel>stAccatastam}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="8rem" sortProperty="tipoCatasto">
+                    <t:Column width="8rem">
                         <Label text="{i18n>colTipoCatasto}" />
                         <t:template>
-                            <Text text="{reportModel>tipoCatasto}" />
+                            <Text text="{historyModel>tipoCatasto}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem" sortProperty="denominatore">
+                    <t:Column width="9rem">
                         <Label text="{i18n>colDenominatore}" />
                         <t:template>
-                            <Text text="{reportModel>denominatore}" />
+                            <Text text="{historyModel>denominatore}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem" sortProperty="tipoParticella">
+                    <t:Column width="9rem">
                         <Label text="{i18n>colTipoParticella}" />
                         <t:template>
-                            <Text text="{reportModel>tipoParticella}" />
+                            <Text text="{historyModel>tipoParticella}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="10rem" sortProperty="codComCatTav">
+                    <t:Column width="10rem">
                         <Label text="{i18n>colCodComCatTav}" />
                         <t:template>
-                            <Text text="{reportModel>codComCatTav}" />
+                            <Text text="{historyModel>codComCatTav}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem" sortProperty="codiceBelfiore">
+                    <t:Column width="9rem">
                         <Label text="{i18n>colCodiceBelfiore}" />
                         <t:template>
-                            <Text text="{reportModel>codiceBelfiore}" />
+                            <Text text="{historyModel>codiceBelfiore}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="7rem" sortProperty="foglio">
+                    <t:Column width="7rem">
                         <Label text="{i18n>colFoglio}" />
                         <t:template>
-                            <Text text="{reportModel>foglio}" />
+                            <Text text="{historyModel>foglio}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem" sortProperty="graffatoFoglio">
+                    <t:Column width="9rem">
                         <Label text="{i18n>colGraffatoFoglio}" />
                         <t:template>
-                            <Text text="{reportModel>graffatoFoglio}" />
+                            <Text text="{historyModel>graffatoFoglio}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem" sortProperty="sezioneUrbana">
+                    <t:Column width="9rem">
                         <Label text="{i18n>colSezioneUrbana}" />
                         <t:template>
-                            <Text text="{reportModel>sezioneUrbana}" />
+                            <Text text="{historyModel>sezioneUrbana}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem" sortProperty="sezioneAmministr">
+                    <t:Column width="9rem">
                         <Label text="{i18n>colSezioneAmministr}" />
                         <t:template>
-                            <Text text="{reportModel>sezioneAmministr}" />
+                            <Text text="{historyModel>sezioneAmministr}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem" sortProperty="particellaCatasto">
+                    <t:Column width="9rem">
                         <Label text="{i18n>colParticellaCatasto}" />
                         <t:template>
-                            <Text text="{reportModel>particellaCatasto}" />
+                            <Text text="{historyModel>particellaCatasto}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="6rem" sortProperty="sub">
+                    <t:Column width="6rem">
                         <Label text="{i18n>colSub}" />
                         <t:template>
-                            <Text text="{reportModel>sub}" />
+                            <Text text="{historyModel>sub}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem" sortProperty="graffMapSub">
+                    <t:Column width="9rem">
                         <Label text="{i18n>colGraffMapSub}" />
                         <t:template>
-                            <Text text="{reportModel>graffMapSub}" />
+                            <Text text="{historyModel>graffMapSub}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem" sortProperty="descrClasse">
+                    <t:Column width="9rem">
                         <Label text="{i18n>colDescrClasse}" />
                         <t:template>
-                            <Text text="{reportModel>descrClasse}" />
+                            <Text text="{historyModel>descrClasse}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem" sortProperty="variazioneDal">
+                    <t:Column width="9rem">
                         <Label text="{i18n>colVariazioneDal}" />
                         <t:template>
-                            <Text text="{reportModel>variazioneDal}" />
+                            <Text text="{historyModel>variazioneDal}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem" sortProperty="variazioneAl">
+                    <t:Column width="9rem">
                         <Label text="{i18n>colVariazioneAl}" />
                         <t:template>
-                            <Text text="{reportModel>variazioneAl}" />
+                            <Text text="{historyModel>variazioneAl}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem" hAlign="End" sortProperty="superficieMq">
+                    <t:Column width="9rem" hAlign="End">
                         <Label text="{i18n>colSuperficieMq}" />
                         <t:template>
-                            <Text text="{reportModel>superficieMq}" />
+                            <Text text="{historyModel>superficieMq}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem" hAlign="End" sortProperty="cubaturaMc">
+                    <t:Column width="9rem" hAlign="End">
                         <Label text="{i18n>colCubaturaMc}" />
                         <t:template>
-                            <Text text="{reportModel>cubaturaMc}" />
+                            <Text text="{historyModel>cubaturaMc}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem" hAlign="End" sortProperty="rendita">
+                    <t:Column width="9rem" hAlign="End">
                         <Label text="{i18n>colRendita}" />
                         <t:template>
-                            <Text text="{reportModel>rendita}" />
+                            <Text text="{historyModel>rendita}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem" sortProperty="dataRivRend">
+                    <t:Column width="9rem">
                         <Label text="{i18n>colDataRivRend}" />
                         <t:template>
-                            <Text text="{reportModel>dataRivRend}" />
+                            <Text text="{historyModel>dataRivRend}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem" sortProperty="tipoDiCalcolo">
+                    <t:Column width="9rem">
                         <Label text="{i18n>colTipoDiCalcolo}" />
                         <t:template>
-                            <Text text="{reportModel>tipoDiCalcolo}" />
+                            <Text text="{historyModel>tipoDiCalcolo}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem" hAlign="End" sortProperty="valOggArch">
+                    <t:Column width="9rem" hAlign="End">
                         <Label text="{i18n>colValOggArch}" />
                         <t:template>
-                            <Text text="{reportModel>valOggArch}" />
+                            <Text text="{historyModel>valOggArch}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem" hAlign="End" sortProperty="redditoDominicale">
+                    <t:Column width="9rem" hAlign="End">
                         <Label text="{i18n>colRedditoDominicale}" />
                         <t:template>
-                            <Text text="{reportModel>redditoDominicale}" />
+                            <Text text="{historyModel>redditoDominicale}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem" hAlign="End" sortProperty="redditoAgrario">
+                    <t:Column width="9rem" hAlign="End">
                         <Label text="{i18n>colRedditoAgrario}" />
                         <t:template>
-                            <Text text="{reportModel>redditoAgrario}" />
+                            <Text text="{historyModel>redditoAgrario}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="14rem" sortProperty="note">
+                    <t:Column width="14rem">
                         <Label text="{i18n>colNote}" />
                         <t:template>
-                            <Text text="{reportModel>note}" />
+                            <Text text="{historyModel>note}" />
                         </t:template>
                     </t:Column>
                 </t:columns>

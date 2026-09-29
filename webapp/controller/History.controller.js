@@ -6,41 +6,23 @@ sap.ui.define([
     "sap/ui/export/library"
 ], function (Controller, JSONModel, models, Spreadsheet, exportLibrary) {
     "use strict";
-    return Controller.extend("reportamministrazionetrasparenza.controller.Worklist", {
+    return Controller.extend("reportamministrazionetrasparenza.controller.History", {
         Spreadsheet: Spreadsheet,
         models: models,
         onInit: function () {
-            this.getView().setModel(models.createViewModel(), "viewModel");
-            this.getView().setModel(models.createSocietyModel(), "societyModel");
-            this.getView().setModel(models.createTipoOggettoModel(), "tipoOggettoModel");
+            this.getView().setModel(models.createHistoryViewModel(), "historyViewModel");
+            this.getView().setModel(models.createHistoryModel(), "historyModel");
         },
-        onValueHelpUnitaEconomica: function () {
-            this._sCurrentValueHelpField = "miFilterUnitaEconomica";
-            this._sCurrentValueHelpTitle = this._i18n("lblUnitaEconomica");
-            this._aCurrentValueHelpEntries = [
-                { key: "U0001", text: "U0001 - Unità Economica Esempio 1" },
-                { key: "U0002", text: "U0002 - Unità Economica Esempio 2" },
-                { key: "U0003", text: "U0003 - Unità Economica Esempio 3" }
-            ];
-            this._openValueHelpDialog();
+        onNavigateBack: function () {
+            this.getOwnerComponent().getRouter().navTo("RouteWorklist");
         },
-        onValueHelpTipoOggetto: function () {
-            this._sCurrentValueHelpField = "miFilterTipoOggetto";
-            this._sCurrentValueHelpTitle = this._i18n("lblTipoOggetto");
+        onValueHelpUtente: function () {
+            this._sCurrentValueHelpField = "miFilterUtente";
+            this._sCurrentValueHelpTitle = this._i18n("lblUtente");
             this._aCurrentValueHelpEntries = [
-                { key: "BAUM", text: "BAUM - Immobile" },
-                { key: "GEBAEUDE", text: "GEBAEUDE - Fabbricato" },
-                { key: "GRUNDST", text: "GRUNDST - Terreno" }
-            ];
-            this._openValueHelpDialog();
-        },
-        onValueHelpOggettoArchitettonico: function () {
-            this._sCurrentValueHelpField = "miFilterOggettoArchitettonico";
-            this._sCurrentValueHelpTitle = this._i18n("lblOggettoArchitettonico");
-            this._aCurrentValueHelpEntries = [
-                { key: "OA0001", text: "OA0001 - Oggetto Architettonico Esempio 1" },
-                { key: "OA0002", text: "OA0002 - Oggetto Architettonico Esempio 2" },
-                { key: "OA0003", text: "OA0003 - Oggetto Architettonico Esempio 3" }
+                { key: "USER01", text: "USER01 - Utente Esempio 1" },
+                { key: "USER02", text: "USER02 - Utente Esempio 2" },
+                { key: "USER03", text: "USER03 - Utente Esempio 3" }
             ];
             this._openValueHelpDialog();
         },
@@ -92,28 +74,20 @@ sap.ui.define([
             this._oValueHelpDialog.close();
         },
         onExecute: function () {
-            var oComponent = this.getOwnerComponent();
-            var oReportModel = oComponent.getModel("reportModel");
-            if (!oReportModel) {
-                oReportModel = models.createReportModel();
-                oComponent.setModel(oReportModel, "reportModel");
-            }
-            oReportModel.setProperty("/results", models.createReportMockEntries());
-        },
-        _i18n: function (sKey) {
-            return this.getOwnerComponent().getModel("i18n").getResourceBundle().getText(sKey);
+            var oHistoryModel = this.getView().getModel("historyModel");
+            oHistoryModel.setProperty("/results", models.createHistoryMockEntries());
         },
         onResultsSelectionChange: function () {
-            var oTable = this.byId("resultsTable");
-            var oViewModel = this.getView().getModel("viewModel");
+            var oTable = this.byId("historyTable");
+            var oHistoryViewModel = this.getView().getModel("historyViewModel");
             var aSelectedIndices = oTable.getSelectedIndices();
-            oViewModel.setProperty("/exportEnabled", aSelectedIndices.length > 0);
+            oHistoryViewModel.setProperty("/exportEnabled", aSelectedIndices.length > 0);
         },
         onExportSelection: function () {
-            var oTable = this.byId("resultsTable");
-            var oReportModel = this.getOwnerComponent().getModel("reportModel");
+            var oTable = this.byId("historyTable");
+            var oHistoryModel = this.getView().getModel("historyModel");
             var aSelectedIndices = oTable.getSelectedIndices();
-            var aAllEntries = oReportModel.getProperty("/results");
+            var aAllEntries = oHistoryModel.getProperty("/results");
             var aSelectedEntries = aSelectedIndices.map(function (iIndex) {
                 return aAllEntries[iIndex];
             });
@@ -173,14 +147,13 @@ sap.ui.define([
             var oSettings = {
                 workbook: { columns: aColumns },
                 dataSource: aSelectedEntries,
-                fileName: this._i18n("reportTitle") + "_" + this._formatExportTimestamp() + ".xlsx"
+                fileName: this._i18n("storicoTitle") + "_" + this._formatExportTimestamp() + ".xlsx"
             };
             var oSheet = new Spreadsheet(oSettings);
             oSheet.build().finally(function () {
                 oSheet.destroy();
             });
         },
-
         _formatExportTimestamp: function () {
             var oNow = new Date();
             var fnPad = function (iValue) {
@@ -193,8 +166,8 @@ sap.ui.define([
             var sMinute = fnPad(oNow.getMinutes());
             return sDay + "-" + sMonth + "-" + sYear + "_" + sHour + "-" + sMinute;
         },
-        onNavigateToHistory: function () {
-            this.getOwnerComponent().getRouter().navTo("RouteHistory");
-        },
+        _i18n: function (sKey) {
+            return this.getOwnerComponent().getModel("i18n").getResourceBundle().getText(sKey);
+        }
     });
 });
