@@ -65,8 +65,322 @@
             </f:DynamicPageHeader>
         </f:header>
         <f:content>
-            <t:Table id="resultsTable" rows="{reportModel>/results}" selectionMode="None" visibleRowCount="5">
-                <t:columns />
+            <t:Table id="resultsTable" rows="{reportModel>/results}" selectionMode="MultiToggle" enableSelectAll="true" rowSelectionChange=".onResultsSelectionChange" visibleRowCount="5">
+                <t:extension>
+                    <Toolbar id="resultsToolbar">
+                        <Title text="{i18n>reportTitle}" level="H4" />
+                        <ToolbarSpacer />
+                        <Button id="btnExportSelection" text="{i18n>exportSelectionBtn}" icon="sap-icon://excel-attachment" type="Success" enabled="{viewModel>/exportEnabled}" press=".onExportSelection" />
+                    </Toolbar>
+                </t:extension>
+                <t:columns>
+                    <t:Column width="6rem">
+                        <Label text="{i18n>colSocieta}" />
+                        <t:template>
+                            <Text text="{reportModel>societa}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="9rem">
+                        <Label text="{i18n>colUnitaEconomica}" />
+                        <t:template>
+                            <Text text="{reportModel>unitaEconomica}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="8rem">
+                        <Label text="{i18n>colCompendio}" />
+                        <t:template>
+                            <Text text="{reportModel>compendio}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="10rem">
+                        <Label text="{i18n>colDescrizTipoComp}" />
+                        <t:template>
+                            <Text text="{reportModel>descrizTipoComp}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="12rem">
+                        <Label text="{i18n>colDefinizioneUE}" />
+                        <t:template>
+                            <Text text="{reportModel>definizioneUE}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="12rem">
+                        <Label text="{i18n>colDescrBenePatrimoniale}" />
+                        <t:template>
+                            <Text text="{reportModel>descrBenePatrimoniale}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="12rem">
+                        <Label text="{i18n>colDescrNaturaGiuridica}" />
+                        <t:template>
+                            <Text text="{reportModel>descrNaturaGiuridica}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="12rem">
+                        <Label text="{i18n>colDescrTitoloUtilizzo}" />
+                        <t:template>
+                            <Text text="{reportModel>descrTitoloUtilizzo}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="9rem">
+                        <Label text="{i18n>colVia}" />
+                        <t:template>
+                            <Text text="{reportModel>via}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="7rem">
+                        <Label text="{i18n>colNumeroCivico}" />
+                        <t:template>
+                            <Text text="{reportModel>numeroCivico}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="6rem">
+                        <Label text="{i18n>colCap}" />
+                        <t:template>
+                            <Text text="{reportModel>cap}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="9rem">
+                        <Label text="{i18n>colLocalita}" />
+                        <t:template>
+                            <Text text="{reportModel>localita}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="6rem">
+                        <Label text="{i18n>colRegione}" />
+                        <t:template>
+                            <Text text="{reportModel>regione}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="9rem">
+                        <Label text="{i18n>colChiavePaesiRegioni}" />
+                        <t:template>
+                            <Text text="{reportModel>chiavePaesiRegioni}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="10rem">
+                        <Label text="{i18n>colOggettoArchitett}" />
+                        <t:template>
+                            <Text text="{reportModel>oggettoArchitett}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="9rem">
+                        <Label text="{i18n>colTipoOggArchitett}" />
+                        <t:template>
+                            <Text text="{reportModel>tipoOggArchitett}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="10rem">
+                        <Label text="{i18n>colDefOggArch}" />
+                        <t:template>
+                            <Text text="{reportModel>defOggArch}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="8rem">
+                        <Label text="{i18n>colFunzione}" />
+                        <t:template>
+                            <Text text="{reportModel>funzione}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="9rem">
+                        <Label text="{i18n>colBusinessPartner}" />
+                        <t:template>
+                            <Text text="{reportModel>businessPartner}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="12rem">
+                        <Label text="{i18n>colDenominazioneDitta}" />
+                        <t:template>
+                            <Text text="{reportModel>denominazioneDitta}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="12rem">
+                        <Label text="{i18n>colDescrTpEdifTerr}" />
+                        <t:template>
+                            <Text text="{reportModel>descrTpEdifTerr}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="12rem">
+                        <Label text="{i18n>colDescrBeneCulturale}" />
+                        <t:template>
+                            <Text text="{reportModel>descrBeneCulturale}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="9rem">
+                        <Label text="{i18n>colIdCatCatastale}" />
+                        <t:template>
+                            <Text text="{reportModel>idCatCatastale}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="9rem" hAlign="End">
+                        <Label text="{i18n>colPercentRivalutaz}" />
+                        <t:template>
+                            <Text text="{reportModel>percentRivalutaz}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="9rem" hAlign="End">
+                        <Label text="{i18n>colCoeffRivalutaz}" />
+                        <t:template>
+                            <Text text="{reportModel>coeffRivalutaz}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="12rem">
+                        <Label text="{i18n>colNotaAddizionaleImmobile}" />
+                        <t:template>
+                            <Text text="{reportModel>notaAddizionaleImmobile}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="8rem">
+                        <Label text="{i18n>colStAccatastam}" />
+                        <t:template>
+                            <Text text="{reportModel>stAccatastam}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="8rem">
+                        <Label text="{i18n>colTipoCatasto}" />
+                        <t:template>
+                            <Text text="{reportModel>tipoCatasto}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="9rem">
+                        <Label text="{i18n>colDenominatore}" />
+                        <t:template>
+                            <Text text="{reportModel>denominatore}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="9rem">
+                        <Label text="{i18n>colTipoParticella}" />
+                        <t:template>
+                            <Text text="{reportModel>tipoParticella}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="10rem">
+                        <Label text="{i18n>colCodComCatTav}" />
+                        <t:template>
+                            <Text text="{reportModel>codComCatTav}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="9rem">
+                        <Label text="{i18n>colCodiceBelfiore}" />
+                        <t:template>
+                            <Text text="{reportModel>codiceBelfiore}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="7rem">
+                        <Label text="{i18n>colFoglio}" />
+                        <t:template>
+                            <Text text="{reportModel>foglio}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="9rem">
+                        <Label text="{i18n>colGraffatoFoglio}" />
+                        <t:template>
+                            <Text text="{reportModel>graffatoFoglio}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="9rem">
+                        <Label text="{i18n>colSezioneUrbana}" />
+                        <t:template>
+                            <Text text="{reportModel>sezioneUrbana}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="9rem">
+                        <Label text="{i18n>colSezioneAmministr}" />
+                        <t:template>
+                            <Text text="{reportModel>sezioneAmministr}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="9rem">
+                        <Label text="{i18n>colParticellaCatasto}" />
+                        <t:template>
+                            <Text text="{reportModel>particellaCatasto}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="6rem">
+                        <Label text="{i18n>colSub}" />
+                        <t:template>
+                            <Text text="{reportModel>sub}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="9rem">
+                        <Label text="{i18n>colGraffMapSub}" />
+                        <t:template>
+                            <Text text="{reportModel>graffMapSub}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="9rem">
+                        <Label text="{i18n>colDescrClasse}" />
+                        <t:template>
+                            <Text text="{reportModel>descrClasse}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="9rem">
+                        <Label text="{i18n>colVariazioneDal}" />
+                        <t:template>
+                            <Text text="{reportModel>variazioneDal}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="9rem">
+                        <Label text="{i18n>colVariazioneAl}" />
+                        <t:template>
+                            <Text text="{reportModel>variazioneAl}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="9rem" hAlign="End">
+                        <Label text="{i18n>colSuperficieMq}" />
+                        <t:template>
+                            <Text text="{reportModel>superficieMq}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="9rem" hAlign="End">
+                        <Label text="{i18n>colCubaturaMc}" />
+                        <t:template>
+                            <Text text="{reportModel>cubaturaMc}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="9rem" hAlign="End">
+                        <Label text="{i18n>colRendita}" />
+                        <t:template>
+                            <Text text="{reportModel>rendita}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="9rem">
+                        <Label text="{i18n>colDataRivRend}" />
+                        <t:template>
+                            <Text text="{reportModel>dataRivRend}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="9rem">
+                        <Label text="{i18n>colTipoDiCalcolo}" />
+                        <t:template>
+                            <Text text="{reportModel>tipoDiCalcolo}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="9rem" hAlign="End">
+                        <Label text="{i18n>colValOggArch}" />
+                        <t:template>
+                            <Text text="{reportModel>valOggArch}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="9rem" hAlign="End">
+                        <Label text="{i18n>colRedditoDominicale}" />
+                        <t:template>
+                            <Text text="{reportModel>redditoDominicale}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="9rem" hAlign="End">
+                        <Label text="{i18n>colRedditoAgrario}" />
+                        <t:template>
+                            <Text text="{reportModel>redditoAgrario}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="14rem">
+                        <Label text="{i18n>colNote}" />
+                        <t:template>
+                            <Text text="{reportModel>note}" />
+                        </t:template>
+                    </t:Column>
+                </t:columns>
             </t:Table>
         </f:content>
     </f:DynamicPage>
