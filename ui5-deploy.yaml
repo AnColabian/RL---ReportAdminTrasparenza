@@ -34,3 +34,11 @@ server:
       configuration:
         flp:
           theme: sap_horizon
+builder:
+  customTasks:
+    - name: ui5-task-zipper
+      afterTask: generateCachebusterInfo
+      configuration:
+        archiveName: reportamministrazionetrasparenza
+        additionalFiles:
+          - xs-app.json
