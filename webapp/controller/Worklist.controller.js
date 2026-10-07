@@ -191,20 +191,55 @@ sap.ui.define([
                 tipoOggetto: this._getReportSelections("miFilterTipoOggetto"),
                 oggettoArchitettonico: this._getReportSelections("miFilterOggettoArchitettonico")
             };
+            var bIsTestMode = oViewModel.getProperty("/filterTest");
             try {
                 oViewModel.setProperty("/busy", true);
-                models.fetchReportData(oODataModel, oSelection, function (oData) {
-                    oReportModel.setProperty("/results", models.mapReportEntries(oData.results || []));
+                var fnLoadSuccess = function (oData) {
+                    var aRawResults = oData.results || [];
+                    oReportModel.setProperty("/results", models.mapReportEntries(aRawResults));
                     this.byId("resultsTable").clearSelection();
                     oViewModel.setProperty("/exportEnabled", false);
-                    oViewModel.setProperty("/busy", false);
-                }.bind(this), function (oError) {
+                    if (bIsTestMode) {
+                        oViewModel.setProperty("/busy", false);
+                    } else {
+                        this._promptSaveAndSubmitBatch(oODataModel, aRawResults, oViewModel);
+                    }
+                }.bind(this);
+                var fnLoadError = function (oError) {
                     oViewModel.setProperty("/busy", false);
                     sap.m.MessageBox.error("Errore nel caricamento dei dati: " + (oError.statusText || oError.statusCode || ""));
-                });
+                };
+                models.fetchReportData(oODataModel, oSelection, fnLoadSuccess, fnLoadError);
             } catch (oError) {
                 oViewModel.setProperty("/busy", false);
                 sap.m.MessageBox.error(oError.message);
+            }
+        },
+        _promptSaveAndSubmitBatch: function (oODataModel, aRawResults, oViewModel) {
+            var self = this;
+            sap.m.MessageBox.confirm(this._i18n("msgSaveReportBatch"), {
+                onClose: function (sAction) {
+                    if (sAction === sap.m.MessageBox.Action.OK) {
+                        self._submitReportBatch(oODataModel, aRawResults, oViewModel);
+                    } else {
+                        oViewModel.setProperty("/busy", false);
+                    }
+                }
+            });
+        },
+        _submitReportBatch: function (oODataModel, aRawResults, oViewModel) {
+            try {
+                var oPayload = models.createReportBatchPayload(oODataModel, aRawResults);
+                models.saveReportBatch(oODataModel, oPayload, function (oResponse) {
+                    oViewModel.setProperty("/busy", false);
+                    sap.m.MessageBox.success(this._i18n("msgReportBatchSaved") + " (ID: " + oPayload.batchId + ")");
+                }.bind(this), function (oError) {
+                    oViewModel.setProperty("/busy", false);
+                    sap.m.MessageBox.error("Errore nel salvataggio del batch: " + (oError.statusText || oError.status || ""));
+                });
+            } catch (oError) {
+                oViewModel.setProperty("/busy", false);
+                sap.m.MessageBox.error("Errore nella preparazione del batch: " + oError.message);
             }
         },
         _i18n: function (sKey) {
