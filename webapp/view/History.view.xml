@@ -4,15 +4,17 @@
     xmlns:f="sap.f"
     xmlns:t="sap.ui.table"
     xmlns:l="sap.ui.layout"
-    xmlns:core="sap.ui.core" displayBlock="true">
+    xmlns:core="sap.ui.core"
+    xmlns:ctl="reportamministrazionetrasparenza.control"
+    xmlns:customData="http://schemas.sap.com/sapui5/extension/sap.ui.core.CustomData/1" displayBlock="true">
     <f:DynamicPage id="pageHistory" toggleHeaderOnTitleClick="false">
         <f:title>
             <f:DynamicPageTitle>
                 <f:heading>
-                    <Title text="{i18n>storicoTitle}" />
+                    <Title text="{i18n>historyReportTitle}" />
                 </f:heading>
                 <f:actions>
-                    <Button text="{i18n>backBtn}" press=".onNavigateBack" />
+                    <Button text="{i18n>backBtn}" icon="sap-icon://nav-back" press=".onBack" />
                 </f:actions>
             </f:DynamicPageTitle>
         </f:title>
@@ -25,14 +27,38 @@
                             <l:content>
                                 <HBox alignItems="End" wrap="Wrap">
                                     <VBox class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
-                                        <Label text="{i18n>lblDataStoricizzazione}" labelFor="drsFilterDataStoricizzazione" />
-                                        <DateRangeSelection id="drsFilterDataStoricizzazione" dateValue="{historyViewModel>/filterDataStoricizzazioneFrom}" secondDateValue="{historyViewModel>/filterDataStoricizzazioneTo}" width="16rem" />
+                                        <Label text="{i18n>lblDataStoricizzazioneDa}" labelFor="dpFilterDataDa" />
+                                        <DatePicker id="dpFilterDataDa" value="{viewModel>/filterDataStoricizzazioneFrom}" valueFormat="yyyyMMdd" displayFormat="dd.MM.yyyy" width="12rem" />
+                                    </VBox>
+                                    <VBox class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                                        <Label text="{i18n>lblDataStoricizzazioneA}" labelFor="dpFilterDataA" />
+                                        <DatePicker id="dpFilterDataA" value="{viewModel>/filterDataStoricizzazioneTo}" valueFormat="yyyyMMdd" displayFormat="dd.MM.yyyy" width="12rem" />
                                     </VBox>
                                     <VBox class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
                                         <Label text="{i18n>lblUtente}" labelFor="miFilterUtente" />
-                                        <MultiInput id="miFilterUtente" showValueHelp="true" valueHelpRequest=".onValueHelpUtente" width="12rem">
+                                        <MultiInput id="miFilterUtente" width="12rem">
                                             <tokens>
-                                                <Token key="{historyViewModel>key}" text="{historyViewModel>text}" />
+                                            </tokens>
+                                        </MultiInput>
+                                    </VBox>
+                                    <VBox class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                                        <Label text="{i18n>lblUnitaEconomica}" labelFor="miFilterUnitaEconomica" />
+                                        <MultiInput id="miFilterUnitaEconomica" showValueHelp="true" valueHelpRequest=".onValueHelpUnitaEconomica" width="14rem">
+                                            <tokens>
+                                            </tokens>
+                                        </MultiInput>
+                                    </VBox>
+                                    <VBox class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                                        <Label text="{i18n>lblTipoOggetto}" labelFor="miFilterTipoOggetto" />
+                                        <MultiInput id="miFilterTipoOggetto" showValueHelp="true" valueHelpRequest=".onValueHelpTipoOggetto" width="9rem">
+                                            <tokens>
+                                            </tokens>
+                                        </MultiInput>
+                                    </VBox>
+                                    <VBox class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                                        <Label text="{i18n>lblOggettoArchitettonico}" labelFor="miFilterOggettoArchitettonico" />
+                                        <MultiInput id="miFilterOggettoArchitettonico" showValueHelp="true" valueHelpRequest=".onValueHelpOggettoArchitettonico" width="14rem">
+                                            <tokens>
                                             </tokens>
                                         </MultiInput>
                                     </VBox>
@@ -42,341 +68,329 @@
                                 </HBox>
                             </l:content>
                         </l:HorizontalLayout>
-                        <!--
-                        <Title text="{i18n>layoutOutputTitle}" level="H4" class="sapuiSmallMarginTop sapuiSmallMarginBottom" />
-                        <l:HorizontalLayout allowWrapping="true">
-                            <l:content>
-                                <HBox alignItems="End" wrap="Wrap">
-                                    <VBox class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
-                                        <Label text="{i18n>lblVarianteLayout}" labelFor="ipFilterLayoutVariant" />
-                                        <Input id="ipFilterLayoutVariant" value="{historyViewModel>/filterLayoutVariant}" width="12rem" />
-                                    </VBox>
-                                </HBox>
-                            </l:content>
-                        </l:HorizontalLayout>
-                        -->
                     </VBox>
                 </f:content>
             </f:DynamicPageHeader>
         </f:header>
         <f:content>
-            <t:Table id="historyTable" rows="{historyModel>/results}" selectionMode="MultiToggle" enableSelectAll="true" rowSelectionChange=".onResultsSelectionChange" visibleRowCount="5">
-                <t:extension>
-                    <Toolbar id="historyToolbar">
-                        <Title text="{i18n>storicoTitle}" level="H4" />
+            <ctl:P13nGridTable id="resultsTable" rows="{historyModel>/results}" selectionMode="MultiToggle" enableSelectAll="true" rowSelectionChange=".onResultsSelectionChange" visibleRowCount="12" sap.ui.fl:flexibility="sap/m/flexibility/EngineFlex">
+                <ctl:extension>
+                    <Toolbar id="resultsToolbar">
+                        <Title text="{i18n>historyReportTitle}" level="H4" />
                         <ToolbarSpacer />
-                        <Button id="btnExportHistorySelection" text="{i18n>exportSelectionBtn}" icon="sap-icon://excel-attachment" type="Success" enabled="{historyViewModel>/exportEnabled}" press=".onExportSelection" />
+                        <Button id="btnP13n" icon="sap-icon://action-settings" type="Transparent" tooltip="{i18n>p13nBtnTooltip}" press=".onP13nPress" />
+                        <Button id="btnExportSelection" text="{i18n>exportSelectionBtn}" icon="sap-icon://excel-attachment" type="Success" enabled="{viewModel>/exportEnabled}" press=".onExportSelection" />
                     </Toolbar>
-                </t:extension>
-                <t:columns>
-                    <t:Column width="6rem">
+                </ctl:extension>
+                <ctl:columns>
+                    <t:Column width="6rem" customData:p13nKey="societa">
                         <Label text="{i18n>colSocieta}" />
                         <t:template>
                             <Text text="{historyModel>societa}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem">
+                    <t:Column width="9rem" customData:p13nKey="unitaEconomica">
                         <Label text="{i18n>colUnitaEconomica}" />
                         <t:template>
                             <Text text="{historyModel>unitaEconomica}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="8rem">
+                    <t:Column width="8rem" customData:p13nKey="compendio">
                         <Label text="{i18n>colCompendio}" />
                         <t:template>
                             <Text text="{historyModel>compendio}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="10rem">
+                    <t:Column width="10rem" customData:p13nKey="descrizTipoComp">
                         <Label text="{i18n>colDescrizTipoComp}" />
                         <t:template>
                             <Text text="{historyModel>descrizTipoComp}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="12rem">
+                    <t:Column width="12rem" customData:p13nKey="definizioneUE">
                         <Label text="{i18n>colDefinizioneUE}" />
                         <t:template>
                             <Text text="{historyModel>definizioneUE}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="12rem">
+                    <t:Column width="12rem" customData:p13nKey="descrBenePatrimoniale">
                         <Label text="{i18n>colDescrBenePatrimoniale}" />
                         <t:template>
                             <Text text="{historyModel>descrBenePatrimoniale}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="12rem">
+                    <t:Column width="12rem" customData:p13nKey="descrNaturaGiuridica">
                         <Label text="{i18n>colDescrNaturaGiuridica}" />
                         <t:template>
                             <Text text="{historyModel>descrNaturaGiuridica}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="12rem">
+                    <t:Column width="12rem" customData:p13nKey="descrTitoloUtilizzo">
                         <Label text="{i18n>colDescrTitoloUtilizzo}" />
                         <t:template>
                             <Text text="{historyModel>descrTitoloUtilizzo}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem">
+                    <t:Column width="9rem" customData:p13nKey="via">
                         <Label text="{i18n>colVia}" />
                         <t:template>
                             <Text text="{historyModel>via}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="7rem">
+                    <t:Column width="7rem" customData:p13nKey="numeroCivico">
                         <Label text="{i18n>colNumeroCivico}" />
                         <t:template>
                             <Text text="{historyModel>numeroCivico}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="6rem">
+                    <t:Column width="6rem" customData:p13nKey="cap">
                         <Label text="{i18n>colCap}" />
                         <t:template>
                             <Text text="{historyModel>cap}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem">
+                    <t:Column width="9rem" customData:p13nKey="localita">
                         <Label text="{i18n>colLocalita}" />
                         <t:template>
                             <Text text="{historyModel>localita}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="6rem">
+                    <t:Column width="6rem" customData:p13nKey="regione">
                         <Label text="{i18n>colRegione}" />
                         <t:template>
                             <Text text="{historyModel>regione}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem">
+                    <t:Column width="9rem" customData:p13nKey="chiavePaesiRegioni">
                         <Label text="{i18n>colChiavePaesiRegioni}" />
                         <t:template>
                             <Text text="{historyModel>chiavePaesiRegioni}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="10rem">
+                    <t:Column width="10rem" customData:p13nKey="oggettoArchitett">
                         <Label text="{i18n>colOggettoArchitett}" />
                         <t:template>
                             <Text text="{historyModel>oggettoArchitett}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem">
+                    <t:Column width="9rem" customData:p13nKey="tipoOggArchitett">
                         <Label text="{i18n>colTipoOggArchitett}" />
                         <t:template>
                             <Text text="{historyModel>tipoOggArchitett}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="10rem">
+                    <t:Column width="10rem" customData:p13nKey="defOggArch">
                         <Label text="{i18n>colDefOggArch}" />
                         <t:template>
                             <Text text="{historyModel>defOggArch}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="8rem">
+                    <t:Column width="8rem" customData:p13nKey="funzione">
                         <Label text="{i18n>colFunzione}" />
                         <t:template>
                             <Text text="{historyModel>funzione}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem">
+                    <t:Column width="9rem" customData:p13nKey="businessPartner">
                         <Label text="{i18n>colBusinessPartner}" />
                         <t:template>
                             <Text text="{historyModel>businessPartner}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="12rem">
+                    <t:Column width="12rem" customData:p13nKey="denominazioneDitta">
                         <Label text="{i18n>colDenominazioneDitta}" />
                         <t:template>
                             <Text text="{historyModel>denominazioneDitta}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="12rem">
+                    <t:Column width="12rem" customData:p13nKey="descrTpEdifTerr">
                         <Label text="{i18n>colDescrTpEdifTerr}" />
                         <t:template>
                             <Text text="{historyModel>descrTpEdifTerr}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="12rem">
+                    <t:Column width="12rem" customData:p13nKey="descrBeneCulturale">
                         <Label text="{i18n>colDescrBeneCulturale}" />
                         <t:template>
                             <Text text="{historyModel>descrBeneCulturale}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem">
+                    <t:Column width="9rem" customData:p13nKey="idCatCatastale">
                         <Label text="{i18n>colIdCatCatastale}" />
                         <t:template>
                             <Text text="{historyModel>idCatCatastale}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem" hAlign="End">
+                    <t:Column width="9rem" hAlign="End" customData:p13nKey="percentRivalutaz">
                         <Label text="{i18n>colPercentRivalutaz}" />
                         <t:template>
                             <Text text="{historyModel>percentRivalutaz}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem" hAlign="End">
+                    <t:Column width="9rem" hAlign="End" customData:p13nKey="coeffRivalutaz">
                         <Label text="{i18n>colCoeffRivalutaz}" />
                         <t:template>
                             <Text text="{historyModel>coeffRivalutaz}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="12rem">
+                    <t:Column width="12rem" customData:p13nKey="notaAddizionaleImmobile">
                         <Label text="{i18n>colNotaAddizionaleImmobile}" />
                         <t:template>
                             <Text text="{historyModel>notaAddizionaleImmobile}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="8rem">
+                    <t:Column width="8rem" customData:p13nKey="stAccatastam">
                         <Label text="{i18n>colStAccatastam}" />
                         <t:template>
                             <Text text="{historyModel>stAccatastam}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="8rem">
+                    <t:Column width="8rem" customData:p13nKey="tipoCatasto">
                         <Label text="{i18n>colTipoCatasto}" />
                         <t:template>
                             <Text text="{historyModel>tipoCatasto}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem">
+                    <t:Column width="9rem" customData:p13nKey="denominatore">
                         <Label text="{i18n>colDenominatore}" />
                         <t:template>
                             <Text text="{historyModel>denominatore}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem">
+                    <t:Column width="9rem" customData:p13nKey="tipoParticella">
                         <Label text="{i18n>colTipoParticella}" />
                         <t:template>
                             <Text text="{historyModel>tipoParticella}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="10rem">
+                    <t:Column width="10rem" customData:p13nKey="codComCatTav">
                         <Label text="{i18n>colCodComCatTav}" />
                         <t:template>
                             <Text text="{historyModel>codComCatTav}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem">
+                    <t:Column width="9rem" customData:p13nKey="codiceBelfiore">
                         <Label text="{i18n>colCodiceBelfiore}" />
                         <t:template>
                             <Text text="{historyModel>codiceBelfiore}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="7rem">
+                    <t:Column width="7rem" customData:p13nKey="foglio">
                         <Label text="{i18n>colFoglio}" />
                         <t:template>
                             <Text text="{historyModel>foglio}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem">
+                    <t:Column width="9rem" customData:p13nKey="graffatoFoglio">
                         <Label text="{i18n>colGraffatoFoglio}" />
                         <t:template>
                             <Text text="{historyModel>graffatoFoglio}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem">
+                    <t:Column width="9rem" customData:p13nKey="sezioneUrbana">
                         <Label text="{i18n>colSezioneUrbana}" />
                         <t:template>
                             <Text text="{historyModel>sezioneUrbana}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem">
+                    <t:Column width="9rem" customData:p13nKey="sezioneAmministr">
                         <Label text="{i18n>colSezioneAmministr}" />
                         <t:template>
                             <Text text="{historyModel>sezioneAmministr}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem">
+                    <t:Column width="9rem" customData:p13nKey="particellaCatasto">
                         <Label text="{i18n>colParticellaCatasto}" />
                         <t:template>
                             <Text text="{historyModel>particellaCatasto}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="6rem">
+                    <t:Column width="6rem" customData:p13nKey="sub">
                         <Label text="{i18n>colSub}" />
                         <t:template>
                             <Text text="{historyModel>sub}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem">
+                    <t:Column width="9rem" customData:p13nKey="graffMapSub">
                         <Label text="{i18n>colGraffMapSub}" />
                         <t:template>
                             <Text text="{historyModel>graffMapSub}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem">
+                    <t:Column width="9rem" customData:p13nKey="descrClasse">
                         <Label text="{i18n>colDescrClasse}" />
                         <t:template>
                             <Text text="{historyModel>descrClasse}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem">
+                    <t:Column width="9rem" customData:p13nKey="variazioneDal">
                         <Label text="{i18n>colVariazioneDal}" />
                         <t:template>
                             <Text text="{historyModel>variazioneDal}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem">
+                    <t:Column width="9rem" customData:p13nKey="variazioneAl">
                         <Label text="{i18n>colVariazioneAl}" />
                         <t:template>
                             <Text text="{historyModel>variazioneAl}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem" hAlign="End">
+                    <t:Column width="9rem" hAlign="End" customData:p13nKey="superficieMq">
                         <Label text="{i18n>colSuperficieMq}" />
                         <t:template>
                             <Text text="{historyModel>superficieMq}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem" hAlign="End">
+                    <t:Column width="9rem" hAlign="End" customData:p13nKey="cubaturaMc">
                         <Label text="{i18n>colCubaturaMc}" />
                         <t:template>
                             <Text text="{historyModel>cubaturaMc}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem" hAlign="End">
+                    <t:Column width="9rem" hAlign="End" customData:p13nKey="rendita">
                         <Label text="{i18n>colRendita}" />
                         <t:template>
                             <Text text="{historyModel>rendita}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem">
+                    <t:Column width="9rem" customData:p13nKey="dataRivRend">
                         <Label text="{i18n>colDataRivRend}" />
                         <t:template>
                             <Text text="{historyModel>dataRivRend}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem">
+                    <t:Column width="9rem" customData:p13nKey="tipoDiCalcolo">
                         <Label text="{i18n>colTipoDiCalcolo}" />
                         <t:template>
                             <Text text="{historyModel>tipoDiCalcolo}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem" hAlign="End">
+                    <t:Column width="9rem" hAlign="End" customData:p13nKey="valOggArch">
                         <Label text="{i18n>colValOggArch}" />
                         <t:template>
                             <Text text="{historyModel>valOggArch}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem" hAlign="End">
+                    <t:Column width="9rem" hAlign="End" customData:p13nKey="redditoDominicale">
                         <Label text="{i18n>colRedditoDominicale}" />
                         <t:template>
                             <Text text="{historyModel>redditoDominicale}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem" hAlign="End">
+                    <t:Column width="9rem" hAlign="End" customData:p13nKey="redditoAgrario">
                         <Label text="{i18n>colRedditoAgrario}" />
                         <t:template>
                             <Text text="{historyModel>redditoAgrario}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="14rem">
+                    <t:Column width="14rem" customData:p13nKey="note">
                         <Label text="{i18n>colNote}" />
                         <t:template>
                             <Text text="{historyModel>note}" />
                         </t:template>
                     </t:Column>
-                </t:columns>
-            </t:Table>
+                </ctl:columns>
+            </ctl:P13nGridTable>
         </f:content>
     </f:DynamicPage>
 </mvc:View>
