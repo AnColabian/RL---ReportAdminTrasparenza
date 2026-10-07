@@ -97,9 +97,13 @@ sap.ui.define([
         },
         onExecute: function () {
             var oComponent = this.getOwnerComponent();
-            var oODataModel = oComponent.getModel("");
-            var oReportModel = oComponent.getModel("reportModel");
+            var oODataModel = oComponent.getModel();
             var oViewModel = this.getView().getModel("viewModel");
+            if (!oODataModel) {
+                sap.m.MessageBox.error("Servizio OData non disponibile. Riprova più tardi.");
+                return;
+            }
+            var oReportModel = oComponent.getModel("reportModel");
             if (!oReportModel) {
                 oReportModel = models.createReportModel();
                 oComponent.setModel(oReportModel, "reportModel");
@@ -110,7 +114,7 @@ sap.ui.define([
                 oViewModel.setProperty("/busy", false);
             }).fail(function (oError) {
                 oViewModel.setProperty("/busy", false);
-                sap.m.MessageBox.error("Errore nel caricamento dei dati");
+                sap.m.MessageBox.error("Errore nel caricamento dei dati: " + (oError.statusText || ""));
             });
         },
         _i18n: function (sKey) {
