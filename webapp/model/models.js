@@ -1,7 +1,9 @@
 sap.ui.define([
     "sap/ui/model/json/JSONModel",
-    "sap/ui/Device"
-], function (JSONModel, Device) {
+    "sap/ui/Device",
+    "sap/ui/model/Filter",
+    "sap/ui/model/FilterOperator"
+], function (JSONModel, Device, Filter, FilterOperator) {
     "use strict";
     return {
         createDeviceModel: function () {
@@ -42,74 +44,120 @@ sap.ui.define([
             });
             return oModel;
         },
-        fetchReportData: function (oODataModel) {
-            var oDeferred = jQuery.Deferred();
-            oODataModel.read("/amministrTrasp", {
-                filters: [new sap.ui.model.Filter("soc", sap.ui.model.FilterOperator.EQ, "1000")],
-                success: function (oData) {
-                    var aResults = oData.results || [];
-                    var aTransformedData = aResults.map(function (item) {
-                        return {
-                            societa: item.soc || "",
-                            unitaEconomica: item.uniEcon || "",
-                            compendio: item.compendio || "",
-                            descrizTipoComp: item.descrComp || "",
-                            definizioneUE: item.defUniEcon || "",
-                            descrBenePatrimoniale: item.descrComp || "",
-                            descrNaturaGiuridica: item.desNatGiur || "",
-                            descrTitoloUtilizzo: item.desTitUtil || "",
-                            via: item.viaBe || "",
-                            numeroCivico: item.numCivicoBe || "",
-                            cap: item.capBe || "",
-                            localita: item.locBe || "",
-                            regione: item.regBe || "",
-                            chiavePaesiRegioni: item.paeseRegBe || "",
-                            oggettoArchitett: item.idOggArc || "",
-                            tipoOggArchitett: item.tipoOggArc || "",
-                            defOggArch: item.defOggArch || "",
-                            funzione: item.funz || "",
-                            businessPartner: item.busPartner || "",
-                            denominazioneDitta: item.denomDitta || "",
-                            descrTpEdifTerr: item.desTpEdTer || "",
-                            descrBeneCulturale: item.descr3 || "",
-                            idCatCatastale: item.IdCat || "",
-                            percentRivalutaz: item.percRiv ? item.percRiv.toString() : "0",
-                            coeffRivalutaz: item.coeffRiv ? item.coeffRiv.toString() : "0",
-                            notaAddizionaleImmobile: item.desAdd || "",
-                            stAccatastam: item.stAccatast || "",
-                            tipoCatasto: item.tipoCatasto || "",
-                            denominatore: item.denominatore || "",
-                            tipoParticella: item.tipoPart || "",
-                            codComCatTav: item.codComCat || "",
-                            codiceBelfiore: item.codBelf || "",
-                            foglio: item.foglio || "",
-                            graffatoFoglio: item.graffFoglio || "",
-                            sezioneUrbana: item.sezUrb || "",
-                            sezioneAmministr: item.sezAmmin || "",
-                            particellaCatasto: item.part || "",
-                            sub: item.sub || "",
-                            graffMapSub: item.grMapSub || "",
-                            descrClasse: item.descr4 || "",
-                            variazioneDal: item.variazDal || "",
-                            variazioneAl: item.variazAl || "",
-                            superficieMq: item.dim1 ? item.dim1.toString() : "0",
-                            cubaturaMc: item.dim2 ? item.dim2.toString() : "0",
-                            rendita: item.rendAcq ? item.rendAcq.toString() : "0",
-                            dataRivRend: item.dataAcqRend || "",
-                            tipoDiCalcolo: item.tipoCalc || "",
-                            valOggArch: item.valOggArch ? item.valOggArch.toString() : "0",
-                            redditoDominicale: item.redDomAcq ? item.redDomAcq.toString() : "0",
-                            redditoAgrario: item.redAgrAcq ? item.redAgrAcq.toString() : "0",
-                            note: item.note || ""
-                        };
-                    });
-                    oDeferred.resolve(aTransformedData);
-                },
-                error: function (oError) {
-                    oDeferred.reject(oError);
+        fetchReportData: function (oODataModel, oSelection, fnSuccess, fnError) {
+            var aFilters = [
+                new Filter("soc", FilterOperator.EQ, oSelection.societa)
+            ];
+            var aFields = [
+                { path: "uniEcon", selections: oSelection.unitaEconomica },
+                { path: "tipoOggArc", selections: oSelection.tipoOggetto },
+                { path: "idOggArc", selections: oSelection.oggettoArchitettonico }
+            ];
+            aFields.forEach(function (oField) {
+                var oFilter = this._createReportFieldFilter(oField.path, oField.selections);
+                if (oFilter) {
+                    aFilters.push(oFilter);
+                }
+            }, this);
+            return oODataModel.read("/amministrTrasp", {
+                filters: [new Filter({ filters: aFilters, and: true })],
+                success: fnSuccess,
+                error: fnError
+            });
+        },
+        _createReportFieldFilter: function (sPath, aSelections) {
+            var aIncluded = [];
+            var aExcluded = [];
+            var mInverseOperators = {
+                EQ: "NE",
+                NE: "EQ",
+                BT: "NB",
+                NB: "BT",
+                LT: "GE",
+                LE: "GT",
+                GT: "LE",
+                GE: "LT",
+                Contains: "NotContains",
+                StartsWith: "NotStartsWith",
+                EndsWith: "NotEndsWith"
+            };
+            (aSelections || []).forEach(function (oSelection) {
+                var sOperator = oSelection.operation;
+                if (oSelection.exclude) {
+                    sOperator = mInverseOperators[sOperator];
+                }
+                if (!sOperator || !FilterOperator[sOperator]) {
+                    throw new Error("Operatore filtro non supportato per " + sPath + ": " + oSelection.operation);
+                }
+                var oFilter = new Filter(sPath, FilterOperator[sOperator], oSelection.value1, oSelection.value2);
+                if (oSelection.exclude) {
+                    aExcluded.push(oFilter);
+                } else {
+                    aIncluded.push(oFilter);
                 }
             });
-            return oDeferred.promise();
+            var aFilters = aExcluded.slice();
+            if (aIncluded.length) {
+                aFilters.unshift(new Filter({ filters: aIncluded, and: false }));
+            }
+            return aFilters.length ? new Filter({ filters: aFilters, and: true }) : null;
+        },
+        mapReportEntries: function (aEntries) {
+            return aEntries.map(function (oItem) {
+                return {
+                    societa: oItem.soc,
+                    unitaEconomica: oItem.uniEcon,
+                    compendio: oItem.compendio,
+                    descrizTipoComp: oItem.descrComp,
+                    definizioneUE: oItem.defUniEcon,
+                    descrBenePatrimoniale: oItem.descrUniEcom,
+                    descrNaturaGiuridica: oItem.desNatGiur,
+                    descrTitoloUtilizzo: oItem.desTitUtil,
+                    via: oItem.viaBe,
+                    numeroCivico: oItem.numCivicoBe,
+                    cap: oItem.capBe,
+                    localita: oItem.locBe,
+                    regione: oItem.regBe,
+                    chiavePaesiRegioni: oItem.paeseRegBe,
+                    oggettoArchitett: oItem.idOggArc,
+                    tipoOggArchitett: oItem.tipoOggArc,
+                    defOggArch: oItem.defOggArc,
+                    funzione: oItem.funz,
+                    businessPartner: oItem.busPartner,
+                    denominazioneDitta: oItem.denomDitta,
+                    descrTpEdifTerr: oItem.desTpEdTer,
+                    descrBeneCulturale: oItem.descr3,
+                    idCatCatastale: oItem.IdCat,
+                    percentRivalutaz: oItem.percRiv,
+                    coeffRivalutaz: oItem.coeffRiv,
+                    notaAddizionaleImmobile: oItem.desAdd,
+                    stAccatastam: oItem.stAccatast,
+                    tipoCatasto: oItem.tipoCatasto,
+                    denominatore: oItem.denominatore,
+                    tipoParticella: oItem.tipoPart,
+                    codComCatTav: oItem.codComCat,
+                    codiceBelfiore: oItem.codBelf,
+                    foglio: oItem.foglio,
+                    graffatoFoglio: oItem.graffFoglio,
+                    sezioneUrbana: oItem.sezUrb,
+                    sezioneAmministr: oItem.sezAmmin,
+                    particellaCatasto: oItem.part,
+                    sub: oItem.sub,
+                    graffMapSub: oItem.grMapSub,
+                    descrClasse: oItem.descr4,
+                    variazioneDal: oItem.variazDal || "",
+                    variazioneAl: oItem.variazAl || "",
+                    superficieMq: oItem.dim1,
+                    cubaturaMc: oItem.dim2,
+                    rendita: oItem.rendAcq,
+                    dataRivRend: oItem.dataAcqRend || "",
+                    tipoDiCalcolo: oItem.tipoCalc,
+                    valOggArch: oItem.valOggArch,
+                    redditoDominicale: oItem.redDomAcq,
+                    redditoAgrario: oItem.redAgrAcq,
+                    note: oItem.note
+                };
+            });
         },
         fetchHistoryData: function (sDateFrom, sDateTo) {
             var oDeferred = jQuery.Deferred();
@@ -188,83 +236,35 @@ sap.ui.define([
             });
             return oDeferred.promise();
         },
-        fetchSocietyHelp: function () {
-            var oDeferred = jQuery.Deferred();
-            var oODataModel = sap.ui.getCore().getComponent().getModel();
-            oODataModel.read("/helpSocieta", {
-                success: function (oData) {
-                    var aSocieties = (oData.results || []).map(function (item) {
-                        return {
-                            code: item.soc,
-                            text: item.soc + " - " + item.nomeSoc
-                        };
-                    });
-                    oDeferred.resolve(aSocieties);
-                },
-                error: function (oError) {
-                    oDeferred.reject(oError);
-                }
+        fetchSocietyHelp: function (oODataModel, fnSuccess, fnError) {
+            return oODataModel.read("/helpSocieta", {
+                success: fnSuccess,
+                error: fnError
             });
-            return oDeferred.promise();
         },
-        fetchTipoOggettoHelp: function () {
-            var oDeferred = jQuery.Deferred();
-            var oODataModel = sap.ui.getCore().getComponent().getModel();
-            oODataModel.read("/helpTipoOggettoArc", {
-                success: function (oData) {
-                    var aTipiOggetto = (oData.results || []).map(function (item) {
-                        return {
-                            code: item.tipoOggArc,
-                            text: item.tipoOggArc + " - " + item.defTipoOggArc
-                        };
-                    });
-                    oDeferred.resolve(aTipiOggetto);
-                },
-                error: function (oError) {
-                    oDeferred.reject(oError);
-                }
+        fetchTipoOggettoHelp: function (oODataModel, fnSuccess, fnError) {
+            return oODataModel.read("/helpTipoOggettoArc", {
+                success: fnSuccess,
+                error: fnError
             });
-            return oDeferred.promise();
         },
-        fetchIdUniEconomicaHelp: function (sSocieta) {
-            var oDeferred = jQuery.Deferred();
-            var oODataModel = sap.ui.getCore().getComponent().getModel();
-            oODataModel.read("/helpIdUniEconomica", {
-                filters: [new sap.ui.model.Filter("soc", sap.ui.model.FilterOperator.EQ, sSocieta)],
-                success: function (oData) {
-                    var aUniEconomiche = (oData.results || []).map(function (item) {
-                        return {
-                            key: item.numUniEconomicia,
-                            text: item.numUniEconomicia
-                        };
-                    });
-                    oDeferred.resolve(aUniEconomiche);
-                },
-                error: function (oError) {
-                    oDeferred.reject(oError);
-                }
+        fetchIdUniEconomicaHelp: function (oODataModel, sSocieta, fnSuccess, fnError) {
+            return oODataModel.read("/helpIdUniEconomica", {
+                filters: [new Filter("soc", FilterOperator.EQ, sSocieta)],
+                success: fnSuccess,
+                error: fnError
             });
-            return oDeferred.promise();
         },
-        fetchIdOggettoArcHelp: function (sIdOggetto) {
-            var oDeferred = jQuery.Deferred();
-            var oODataModel = sap.ui.getCore().getComponent().getModel();
-            oODataModel.read("/helpIdOggettoArc", {
-                filters: [new sap.ui.model.Filter("idOggArc", sap.ui.model.FilterOperator.EQ, sIdOggetto)],
-                success: function (oData) {
-                    var aIdOggetti = (oData.results || []).map(function (item) {
-                        return {
-                            key: item.idOggArc,
-                            text: item.idOggArc + " - " + item.def
-                        };
-                    });
-                    oDeferred.resolve(aIdOggetti);
-                },
-                error: function (oError) {
-                    oDeferred.reject(oError);
-                }
+        fetchIdOggettoArcHelp: function (oODataModel, sIdOggetto, fnSuccess, fnError) {
+            var aFilters = [];
+            if (sIdOggetto) {
+                aFilters.push(new Filter("idOggArc", FilterOperator.EQ, sIdOggetto));
+            }
+            return oODataModel.read("/helpIdOggettoArc", {
+                filters: aFilters,
+                success: fnSuccess,
+                error: fnError
             });
-            return oDeferred.promise();
         },
         createHistoryViewModel: function () {
             var oModel = new JSONModel({
