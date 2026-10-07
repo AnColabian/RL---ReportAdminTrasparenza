@@ -17,7 +17,7 @@
     },
     "dataSources": {
       "mainService": {
-        "uri": "/sap/opu/odata/sap/ZRE_REPORT_ADMIN_TRASP_SRV/",
+        "uri": "/sap/opu/odata/sap/ZRE_REPAMMTRASP_SRV/",
         "type": "OData",
         "settings": {
           "odataVersion": "2.0",

@@ -97,12 +97,21 @@ sap.ui.define([
         },
         onExecute: function () {
             var oComponent = this.getOwnerComponent();
+            var oODataModel = oComponent.getModel("");
             var oReportModel = oComponent.getModel("reportModel");
+            var oViewModel = this.getView().getModel("viewModel");
             if (!oReportModel) {
                 oReportModel = models.createReportModel();
                 oComponent.setModel(oReportModel, "reportModel");
             }
-            oReportModel.setProperty("/results", models.createReportMockEntries());
+            oViewModel.setProperty("/busy", true);
+            models.fetchReportData(oODataModel).done(function (aData) {
+                oReportModel.setProperty("/results", aData);
+                oViewModel.setProperty("/busy", false);
+            }).fail(function (oError) {
+                oViewModel.setProperty("/busy", false);
+                sap.m.MessageBox.error("Errore nel caricamento dei dati");
+            });
         },
         _i18n: function (sKey) {
             return this.getOwnerComponent().getModel("i18n").getResourceBundle().getText(sKey);
