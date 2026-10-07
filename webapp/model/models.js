@@ -2,8 +2,9 @@ sap.ui.define([
     "sap/ui/model/json/JSONModel",
     "sap/ui/Device",
     "sap/ui/model/Filter",
-    "sap/ui/model/FilterOperator"
-], function (JSONModel, Device, Filter, FilterOperator) {
+    "sap/ui/model/FilterOperator",
+    "sap/ui/thirdparty/jquery"
+], function (JSONModel, Device, Filter, FilterOperator, jQuery) {
     "use strict";
     return {
         createDeviceModel: function () {
@@ -282,6 +283,56 @@ sap.ui.define([
                 results: []
             });
             return oModel;
-        }
+        },
+        createReportBatchPayload: function (oODataModel, aEntries) {
+            var oNow = new Date();
+            var sDate = String(oNow.getFullYear()) + String(oNow.getMonth() + 1).padStart(2, "0") + String(oNow.getDate()).padStart(2, "0");
+            var sTime = String(oNow.getHours()).padStart(2, "0") + String(oNow.getMinutes()).padStart(2, "0") + String(oNow.getSeconds()).padStart(2, "0");
+            var sBatchId = "BATCH" + sDate + sTime;
+            var oMetaModel = oODataModel.getMetaModel();
+            var oEntitySet = oMetaModel.getODataEntitySet("amministrTrasp");
+            var oEntityType = oEntitySet && oMetaModel.getODataEntityType(oEntitySet.entityType);
+            if (!oEntityType) {
+                throw new Error("Metadata di amministrTrasp non disponibile.");
+            }
+            var aRows = aEntries.map(function (oEntry) {
+                var oRow = {};
+                oEntityType.property.forEach(function (oProperty) {
+                    var vValue = oEntry[oProperty.name];
+                    if (vValue === undefined) {
+                        return;
+                    }
+                    if (oProperty.type === "Edm.Time" && vValue !== null && typeof vValue === "object") {
+                        var iSeconds = Math.floor(vValue.ms / 1000);
+                        if (!Number.isFinite(iSeconds) || iSeconds < 0) {
+                            throw new Error("Ora di storicizzazione non valida.");
+                        }
+                        vValue = "PT" + String(Math.floor(iSeconds / 3600)).padStart(2, "0") + "H" + String(Math.floor(iSeconds % 3600 / 60)).padStart(2, "0") + "M" + String(iSeconds % 60).padStart(2, "0") + "S";
+                    }
+                    oRow[oProperty.name] = vValue;
+                });
+                return oRow;
+            });
+            return {
+                batchId: sBatchId,
+                toRighe: aRows
+            };
+        },
+        saveReportBatch: function (oODataModel, oPayload, fnSuccess, fnError) {
+            var sServiceUrl = oODataModel.getServiceUrl().replace(/\/$/, "");
+            oODataModel.refreshSecurityToken(function () {
+                jQuery.ajax({
+                    url: sServiceUrl + "/amministrTraspBatch",
+                    method: "POST",
+                    contentType: "application/json",
+                    headers: {
+                        "X-CSRF-Token": oODataModel.getSecurityToken()
+                    },
+                    data: JSON.stringify(oPayload),
+                    success: fnSuccess,
+                    error: fnError
+                });
+            }, fnError, true);
+        },
     };
 });
