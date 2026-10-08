@@ -73,7 +73,7 @@
             </f:DynamicPageHeader>
         </f:header>
         <f:content>
-            <ctl:P13nGridTable id="resultsTable" rows="{historyModel>/results}" selectionMode="MultiToggle" enableSelectAll="true" rowSelectionChange=".onResultsSelectionChange" visibleRowCount="12" sap.ui.fl:flexibility="sap/m/flexibility/EngineFlex">
+            <ctl:P13nGridTable id="resultsTable" rows="{historyModel>/results}" selectionMode="MultiToggle" enableSelectAll="true" rowSelectionChange=".onResultsSelectionChange" visibleRowCount="12" >
                 <ctl:extension>
                     <Toolbar id="resultsToolbar">
                         <Title text="{i18n>historyReportTitle}" level="H4" />
