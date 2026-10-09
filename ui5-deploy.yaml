@@ -4,41 +4,21 @@ specVersion: "4.0"
 metadata:
   name: reportamministrazionetrasparenza
 type: application
-server:
-  customMiddleware:
-    - name: fiori-tools-proxy
-      afterMiddleware: compression
-      configuration:
-        ignoreCertErrors: false
-        ui5:
-          path:
-            - /resources
-            - /test-resources
-          url: https://ui5.sap.com
-        backend:
-          - path: /s4
-            pathPrefix: /
-            url: http://g4d-basic.sap.ariaspa.local:44300
-            client: "115"
-          - path: /sap/opu/odata
-            destination: S4_PRINCIPAL_PROPAGATION
-            scp: true
-    - name: fiori-tools-appreload
-      afterMiddleware: compression
-      configuration:
-        port: 35729
-        path: webapp
-        delay: 300
-    - name: fiori-tools-preview
-      afterMiddleware: fiori-tools-appreload
-      configuration:
-        flp:
-          theme: sap_horizon
+
+resources:
+  configuration:
+    propertiesFileSourceEncoding: UTF-8
+
 builder:
+  resources:
+    excludes:
+      - /test/**
+      - /localService/**
   customTasks:
     - name: ui5-task-zipper
       afterTask: generateCachebusterInfo
       configuration:
         archiveName: reportamministrazionetrasparenza
+        relativePaths: true
         additionalFiles:
           - xs-app.json
