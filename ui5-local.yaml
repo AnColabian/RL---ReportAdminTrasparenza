@@ -28,7 +28,11 @@ server:
     - name: fiori-tools-proxy
       afterMiddleware: compression
       configuration:
-        ignoreCertErrors: false # If set to true, certificate errors will be ignored. E.g. self-signed certificates will be accepted
+        ignoreCertErrors: false
+        backend:
+          - path: /sap/opu/odata
+            destination: S4_PRINCIPAL_PROPAGATION
+            scp: true
 builder:
   resources:
     excludes:
