@@ -1,3 +1,4 @@
+// AGGIUNGERE '/' PRIMA DEL PATH AL SERVIZIO ODATA SU MANIFEST PER WORK LOCALE. TOGLIERE PER DEPLOY
 sap.ui.define([
     "sap/ui/core/mvc/Controller",
     "sap/ui/model/json/JSONModel",
