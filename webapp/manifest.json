@@ -145,12 +145,5 @@
   "sap.cloud": {
     "public": true,
     "service": "reportamministrazionetrasparenza"
-  },
-  "sap.flp": {
-    "type": "application",
-    "config": {
-      "semanticObject": "RL_Report_Admin_Trasparenza",
-      "action": "display"
-    }
   }
 }
