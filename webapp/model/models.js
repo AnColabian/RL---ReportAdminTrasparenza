@@ -166,7 +166,9 @@ sap.ui.define([
             }.bind(this)).catch(fnError);
         },
         _fetchHistoryData: function (oODataModel, oSelection, fnSuccess, fnError) {
-            var aFilters = [];
+            var aFilters = [
+                new Filter("soc", FilterOperator.EQ, "1000")
+            ];
             var oMetaModel = oODataModel.getMetaModel();
             var oEntitySet = oMetaModel.getODataEntitySet("amministrTrasp");
             var oEntityType = oEntitySet && oMetaModel.getODataEntityType(oEntitySet.entityType);
@@ -201,7 +203,7 @@ sap.ui.define([
                 }
             }, this);
             return this._readHistoryPages(oODataModel, {
-                filters: aFilters.length ? [new Filter({ filters: aFilters, and: true })] : []
+                filters: [new Filter({ filters: aFilters, and: true })]
             }, fnSuccess, fnError);
         },
         _readHistoryPages: function (oODataModel, mParameters, fnSuccess, fnError) {
