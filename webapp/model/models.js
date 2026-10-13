@@ -161,7 +161,11 @@ sap.ui.define([
             });
         },
         fetchHistoryData: function (oODataModel, oSelection, fnSuccess, fnError) {
-            return oODataModel.metadataLoaded(true).then(function () {
+            return Promise.resolve().then(function () {
+                return oODataModel.metadataLoaded(true);
+            }).then(function () {
+                return oODataModel.getMetaModel().loaded();
+            }).then(function () {
                 return this._fetchHistoryData(oODataModel, oSelection, fnSuccess, fnError);
             }.bind(this)).catch(fnError);
         },

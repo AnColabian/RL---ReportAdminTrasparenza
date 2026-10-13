@@ -163,7 +163,7 @@ sap.ui.define([
                 tipoOggetto: this._getHistorySelections("miFilterTipoOggetto"),
                 oggettoArchitettonico: this._getHistorySelections("miFilterOggettoArchitettonico")
             };
-            var fnError = function () {
+            var fnError = function (oError) {
                 oViewModel.setProperty("/busy", false);
                 MessageBox.error(this._i18n("msgHistoryLoadError"));
             }.bind(this);
