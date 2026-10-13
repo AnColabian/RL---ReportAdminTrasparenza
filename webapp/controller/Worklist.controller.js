@@ -1,11 +1,11 @@
-// AGGIUNGERE '/' PRIMA DEL PATH AL SERVIZIO ODATA SU MANIFEST PER WORK LOCALE. TOGLIERE PER DEPLOY
 sap.ui.define([
     "sap/ui/core/mvc/Controller",
     "sap/ui/model/json/JSONModel",
     "../model/models",
     "sap/ui/export/Spreadsheet",
-    "sap/ui/export/library"
-], function (Controller, JSONModel, models, Spreadsheet, exportLibrary) {
+    "sap/ui/export/library",
+    "sap/m/MessageBox"
+], function (Controller, JSONModel, models, Spreadsheet, exportLibrary, MessageBox) {
     "use strict";
     return Controller.extend("reportamministrazionetrasparenza.controller.Worklist", {
         Spreadsheet: Spreadsheet,
@@ -90,7 +90,6 @@ sap.ui.define([
                     this
                 );
                 this.getView().addDependent(this._oValueHelpDialog);
-                this._oValueHelpDialog.setModel(new JSONModel({ entries: [] }), "valueHelpData");
             }
             this._sCurrentValueHelpField = oConfig.field;
             var oTable = new sap.ui.table.Table({
@@ -113,15 +112,20 @@ sap.ui.define([
                 this._oValueHelpTable.destroy();
             }
             this._oValueHelpTable = oTable;
-            this._oValueHelpDialog.getModel("valueHelpData").setProperty("/entries", oConfig.entries);
+            var oValueHelpDataModel = new JSONModel({
+                entries: oConfig.entries
+            });
+            oValueHelpDataModel.setSizeLimit(Math.max(100, oConfig.entries.length));
+            this._oValueHelpDialog.setModel(oValueHelpDataModel, "valueHelpData");
+            var oInput = this.byId(oConfig.field);
             this._oValueHelpDialog.setKey(oConfig.key);
             this._oValueHelpDialog.setDescriptionKey(oConfig.descriptionKey || "");
+            this._oValueHelpDialog.setTokens(oInput.getTokens().map(function (oToken) {
+                return oToken.clone();
+            }));
             this._oValueHelpDialog.setRangeKeyFields([
                 { label: oConfig.title, key: oConfig.key, type: "string" }
             ]);
-            this._oValueHelpDialog.setTokens(this.byId(oConfig.field).getTokens().map(function (oToken) {
-                return oToken.clone();
-            }));
             this._oValueHelpDialog.setTitle(oConfig.title);
             this._oValueHelpDialog.update();
             this._oValueHelpDialog.open();
@@ -130,6 +134,7 @@ sap.ui.define([
             var aTokens = oEvent.getParameter("tokens") || [];
             var oInput = this.byId(this._sCurrentValueHelpField);
             oInput.setTokens(aTokens);
+            oInput.setValue("");
             this._oValueHelpDialog.close();
         },
         onValueHelpCancel: function () {
@@ -137,8 +142,8 @@ sap.ui.define([
         },
         _onValueHelpError: function (oError) {
             this.getView().setBusy(false);
-            var sDetails = oError.statusCode || oError.statusText || "";
-            sap.m.MessageBox.error(this._i18n("msgValueHelpLoadError") + (sDetails ? " (" + sDetails + ")" : ""));
+            var sDetails = oError && (oError.statusCode || oError.statusText || "");
+            MessageBox.error(this._i18n("msgValueHelpLoadError") + (sDetails ? " (" + sDetails + ")" : ""));
         },
         _getReportSelections: function (sControlId) {
             var oInput = this.byId(sControlId);
@@ -178,7 +183,7 @@ sap.ui.define([
                 return;
             }
             if (!oODataModel) {
-                sap.m.MessageBox.error("Servizio OData non disponibile.");
+                MessageBox.error("Servizio OData non disponibile.");
                 return;
             }
             var oReportModel = oComponent.getModel("reportModel");
@@ -208,19 +213,19 @@ sap.ui.define([
                 }.bind(this);
                 var fnLoadError = function (oError) {
                     oViewModel.setProperty("/busy", false);
-                    sap.m.MessageBox.error("Errore nel caricamento dei dati: " + (oError.statusText || oError.statusCode || ""));
+                    MessageBox.error("Errore nel caricamento dei dati: " + (oError.statusText || oError.statusCode || ""));
                 };
                 models.fetchReportData(oODataModel, oSelection, fnLoadSuccess, fnLoadError);
             } catch (oError) {
                 oViewModel.setProperty("/busy", false);
-                sap.m.MessageBox.error(oError.message);
+                MessageBox.error(oError.message);
             }
         },
         _promptSaveAndSubmitBatch: function (oODataModel, aRawResults, oViewModel) {
             var self = this;
-            sap.m.MessageBox.confirm(this._i18n("msgSaveReportBatch"), {
+            MessageBox.confirm(this._i18n("msgSaveReportBatch"), {
                 onClose: function (sAction) {
-                    if (sAction === sap.m.MessageBox.Action.OK) {
+                    if (sAction === MessageBox.Action.OK) {
                         self._submitReportBatch(oODataModel, aRawResults, oViewModel);
                     } else {
                         oViewModel.setProperty("/busy", false);
@@ -231,16 +236,16 @@ sap.ui.define([
         _submitReportBatch: function (oODataModel, aRawResults, oViewModel) {
             try {
                 var oPayload = models.createReportBatchPayload(oODataModel, aRawResults);
-                models.saveReportBatch(oODataModel, oPayload, function (oResponse) {
+                models.saveReportBatch(oODataModel, oPayload, function () {
                     oViewModel.setProperty("/busy", false);
-                    sap.m.MessageBox.success(this._i18n("msgReportBatchSaved") + " (ID: " + oPayload.batchId + ")");
+                    MessageBox.success(this._i18n("msgReportBatchSaved") + " (ID: " + oPayload.batchId + ")");
                 }.bind(this), function (oError) {
                     oViewModel.setProperty("/busy", false);
-                    sap.m.MessageBox.error("Errore nel salvataggio del batch: " + (oError.statusText || oError.status || ""));
+                    MessageBox.error("Errore nel salvataggio del batch: " + (oError.statusText || oError.status || ""));
                 });
             } catch (oError) {
                 oViewModel.setProperty("/busy", false);
-                sap.m.MessageBox.error("Errore nella preparazione del batch: " + oError.message);
+                MessageBox.error("Errore nella preparazione del batch: " + oError.message);
             }
         },
         _i18n: function (sKey) {
@@ -254,71 +259,34 @@ sap.ui.define([
         },
         onExportSelection: function () {
             var oTable = this.byId("resultsTable");
-            var oReportModel = this.getOwnerComponent().getModel("reportModel");
-            var aSelectedIndices = oTable.getSelectedIndices();
-            var aAllEntries = oReportModel.getProperty("/results");
-            var aSelectedEntries = aSelectedIndices.map(function (iIndex) {
-                return aAllEntries[iIndex];
+            var oViewModel = this.getView().getModel("viewModel");
+            if (oViewModel.getProperty("/busy")) {
+                return;
+            }
+            var aSelectedEntries = oTable.getSelectedIndices().map(function (iIndex) {
+                var oContext = oTable.getContextByIndex(iIndex);
+                return oContext && oContext.getObject();
+            }).filter(function (oEntry) {
+                return !!oEntry;
             });
-            var aColumns = [
-                { label: this._i18n("colSocieta"), property: "societa" },
-                { label: this._i18n("colUnitaEconomica"), property: "unitaEconomica" },
-                { label: this._i18n("colCompendio"), property: "compendio" },
-                { label: this._i18n("colDescrizTipoComp"), property: "descrizTipoComp" },
-                { label: this._i18n("colDefinizioneUE"), property: "definizioneUE" },
-                { label: this._i18n("colDescrBenePatrimoniale"), property: "descrBenePatrimoniale" },
-                { label: this._i18n("colDescrNaturaGiuridica"), property: "descrNaturaGiuridica" },
-                { label: this._i18n("colDescrTitoloUtilizzo"), property: "descrTitoloUtilizzo" },
-                { label: this._i18n("colVia"), property: "via" },
-                { label: this._i18n("colNumeroCivico"), property: "numeroCivico" },
-                { label: this._i18n("colCap"), property: "cap" },
-                { label: this._i18n("colLocalita"), property: "localita" },
-                { label: this._i18n("colRegione"), property: "regione" },
-                { label: this._i18n("colChiavePaesiRegioni"), property: "chiavePaesiRegioni" },
-                { label: this._i18n("colOggettoArchitett"), property: "oggettoArchitett" },
-                { label: this._i18n("colTipoOggArchitett"), property: "tipoOggArchitett" },
-                { label: this._i18n("colDefOggArch"), property: "defOggArch" },
-                { label: this._i18n("colFunzione"), property: "funzione" },
-                { label: this._i18n("colBusinessPartner"), property: "businessPartner" },
-                { label: this._i18n("colDenominazioneDitta"), property: "denominazioneDitta" },
-                { label: this._i18n("colDescrTpEdifTerr"), property: "descrTpEdifTerr" },
-                { label: this._i18n("colDescrBeneCulturale"), property: "descrBeneCulturale" },
-                { label: this._i18n("colIdCatCatastale"), property: "idCatCatastale" },
-                { label: this._i18n("colPercentRivalutaz"), property: "percentRivalutaz" },
-                { label: this._i18n("colCoeffRivalutaz"), property: "coeffRivalutaz" },
-                { label: this._i18n("colNotaAddizionaleImmobile"), property: "notaAddizionaleImmobile" },
-                { label: this._i18n("colStAccatastam"), property: "stAccatastam" },
-                { label: this._i18n("colTipoCatasto"), property: "tipoCatasto" },
-                { label: this._i18n("colDenominatore"), property: "denominatore" },
-                { label: this._i18n("colTipoParticella"), property: "tipoParticella" },
-                { label: this._i18n("colCodComCatTav"), property: "codComCatTav" },
-                { label: this._i18n("colCodiceBelfiore"), property: "codiceBelfiore" },
-                { label: this._i18n("colFoglio"), property: "foglio" },
-                { label: this._i18n("colGraffatoFoglio"), property: "graffatoFoglio" },
-                { label: this._i18n("colSezioneUrbana"), property: "sezioneUrbana" },
-                { label: this._i18n("colSezioneAmministr"), property: "sezioneAmministr" },
-                { label: this._i18n("colParticellaCatasto"), property: "particellaCatasto" },
-                { label: this._i18n("colSub"), property: "sub" },
-                { label: this._i18n("colGraffMapSub"), property: "graffMapSub" },
-                { label: this._i18n("colDescrClasse"), property: "descrClasse" },
-                { label: this._i18n("colVariazioneDal"), property: "variazioneDal" },
-                { label: this._i18n("colVariazioneAl"), property: "variazioneAl" },
-                { label: this._i18n("colSuperficieMq"), property: "superficieMq" },
-                { label: this._i18n("colCubaturaMc"), property: "cubaturaMc" },
-                { label: this._i18n("colRendita"), property: "rendita" },
-                { label: this._i18n("colDataRivRend"), property: "dataRivRend" },
-                { label: this._i18n("colTipoDiCalcolo"), property: "tipoDiCalcolo" },
-                { label: this._i18n("colValOggArch"), property: "valOggArch" },
-                { label: this._i18n("colRedditoDominicale"), property: "redditoDominicale" },
-                { label: this._i18n("colRedditoAgrario"), property: "redditoAgrario" },
-                { label: this._i18n("colNote"), property: "note" }
-            ];
-            var oSettings = {
+            var aColumns = oTable.getColumns().filter(function (oColumn) {
+                return oColumn.getVisible();
+            }).map(function (oColumn) {
+                var oBindingInfo = oColumn.getTemplate().getBindingInfo("text");
+                var oPart = oBindingInfo && oBindingInfo.parts && oBindingInfo.parts[0];
+                return {
+                    label: oColumn.getLabel().getText(),
+                    property: oPart ? oPart.path : oColumn.data("p13nKey")
+                };
+            });
+            if (!aSelectedEntries.length || !aColumns.length) {
+                return;
+            }
+            var oSheet = new this.Spreadsheet({
                 workbook: { columns: aColumns },
                 dataSource: aSelectedEntries,
                 fileName: this._i18n("reportTitle") + "_" + this._formatExportTimestamp() + ".xlsx"
-            };
-            var oSheet = new Spreadsheet(oSettings);
+            });
             oSheet.build().finally(function () {
                 oSheet.destroy();
             });
@@ -337,6 +305,6 @@ sap.ui.define([
         },
         onNavigateToHistory: function () {
             this.getOwnerComponent().getRouter().navTo("RouteHistory");
-        },
+        }
     });
 });
