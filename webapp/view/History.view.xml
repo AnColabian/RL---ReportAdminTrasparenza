@@ -7,14 +7,14 @@
     xmlns:core="sap.ui.core"
     xmlns:ctl="reportamministrazionetrasparenza.control"
     xmlns:customData="http://schemas.sap.com/sapui5/extension/sap.ui.core.CustomData/1" displayBlock="true">
-    <f:DynamicPage id="pageHistory" toggleHeaderOnTitleClick="false">
+    <f:DynamicPage id="pageHistory" toggleHeaderOnTitleClick="false" busy="{historyViewModel>/busy}">
         <f:title>
             <f:DynamicPageTitle>
                 <f:heading>
-                    <Title text="{i18n>historyReportTitle}" />
+                    <Title text="{i18n>storicoTitle}" />
                 </f:heading>
                 <f:actions>
-                    <Button text="{i18n>backBtn}" icon="sap-icon://nav-back" press=".onBack" />
+                    <Button text="{i18n>backBtn}" icon="sap-icon://nav-back" press=".onNavigateBack" />
                 </f:actions>
             </f:DynamicPageTitle>
         </f:title>
@@ -28,15 +28,15 @@
                                 <HBox alignItems="End" wrap="Wrap">
                                     <VBox class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
                                         <Label text="{i18n>lblDataStoricizzazioneDa}" labelFor="dpFilterDataDa" />
-                                        <DatePicker id="dpFilterDataDa" value="{viewModel>/filterDataStoricizzazioneFrom}" valueFormat="yyyyMMdd" displayFormat="dd.MM.yyyy" width="12rem" />
+                                        <DatePicker id="dpFilterDataDa" value="{historyViewModel>/filterDataStoricizzazioneFrom}" valueFormat="yyyyMMdd" displayFormat="dd.MM.yyyy" width="12rem" />
                                     </VBox>
                                     <VBox class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
                                         <Label text="{i18n>lblDataStoricizzazioneA}" labelFor="dpFilterDataA" />
-                                        <DatePicker id="dpFilterDataA" value="{viewModel>/filterDataStoricizzazioneTo}" valueFormat="yyyyMMdd" displayFormat="dd.MM.yyyy" width="12rem" />
+                                        <DatePicker id="dpFilterDataA" value="{historyViewModel>/filterDataStoricizzazioneTo}" valueFormat="yyyyMMdd" displayFormat="dd.MM.yyyy" width="12rem" />
                                     </VBox>
                                     <VBox class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
                                         <Label text="{i18n>lblUtente}" labelFor="miFilterUtente" />
-                                        <MultiInput id="miFilterUtente" width="12rem">
+                                        <MultiInput id="miFilterUtente" showValueHelp="true" valueHelpRequest=".onValueHelpUtente" width="12rem">
                                             <tokens>
                                             </tokens>
                                         </MultiInput>
@@ -76,10 +76,10 @@
             <ctl:P13nGridTable id="resultsTable" rows="{historyModel>/results}" selectionMode="MultiToggle" enableSelectAll="true" rowSelectionChange=".onResultsSelectionChange" visibleRowCount="12" >
                 <ctl:extension>
                     <Toolbar id="resultsToolbar">
-                        <Title text="{i18n>historyReportTitle}" level="H4" />
+                        <Title text="{i18n>storicoTitle}" level="H4" />
                         <ToolbarSpacer />
                         <Button id="btnP13n" icon="sap-icon://action-settings" type="Transparent" tooltip="{i18n>p13nBtnTooltip}" press=".onP13nPress" />
-                        <Button id="btnExportSelection" text="{i18n>exportSelectionBtn}" icon="sap-icon://excel-attachment" type="Success" enabled="{viewModel>/exportEnabled}" press=".onExportSelection" />
+                        <Button id="btnExportSelection" text="{i18n>exportSelectionBtn}" icon="sap-icon://excel-attachment" type="Success" enabled="{historyViewModel>/exportEnabled}" press=".onExportSelection" />
                     </Toolbar>
                 </ctl:extension>
                 <ctl:columns>
