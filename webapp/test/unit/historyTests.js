@@ -68,10 +68,12 @@ sap.ui.define([
         assert.strictEqual(oOData.read.firstCall.args[1].urlParameters.$select, "utente");
         oOData.read.firstCall.args[1].success({
             results: [{ utente: "A" }, { utente: "" }, { utente: "A" }],
-            __next: "https://backend/service/amministrTrasp?$skiptoken=next"
+            __next: "https://backend/service/amministrTrasp?$skiptoken=next%2Bpage&$select=utente"
         });
         assert.notOk(fnSuccess.called);
-        assert.strictEqual(oOData.read.secondCall.args[0], "/amministrTrasp?$skiptoken=next");
+        assert.strictEqual(oOData.read.secondCall.args[0], "/amministrTrasp");
+        assert.strictEqual(oOData.read.secondCall.args[1].urlParameters.$skiptoken, "next+page");
+        assert.strictEqual(oOData.read.secondCall.args[1].urlParameters.$select, "utente");
         oOData.read.secondCall.args[1].success({ results: [{ utente: "B" }] });
         assert.deepEqual(fnSuccess.firstCall.args[0].results, [{ utente: "A" }, { utente: "B" }]);
         assert.notOk(fnError.called);

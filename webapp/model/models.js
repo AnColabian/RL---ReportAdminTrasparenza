@@ -216,7 +216,11 @@ sap.ui.define([
                                 fnError(new Error("Pagina successiva dello storico non valida."));
                                 return;
                             }
-                            fnRead("/amministrTrasp" + aNext[1], {});
+                            var mNextParameters = Object.create(null);
+                            new URLSearchParams(aNext[1]).forEach(function (sValue, sName) {
+                                mNextParameters[sName] = sValue;
+                            });
+                            fnRead("/amministrTrasp", { urlParameters: mNextParameters });
                         } else {
                             fnSuccess({ results: aEntries });
                         }
