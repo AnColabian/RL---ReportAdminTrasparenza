@@ -234,19 +234,29 @@ sap.ui.define([
             });
         },
         _submitReportBatch: function (oODataModel, aRawResults, oViewModel) {
-            try {
+            oViewModel.setProperty("/busy", true);
+            return Promise.resolve().then(function () {
+                return oODataModel.metadataLoaded(true);
+            }).then(function () {
+                return oODataModel.getMetaModel().loaded();
+            }).then(function () {
                 var oPayload = models.createReportBatchPayload(oODataModel, aRawResults);
-                models.saveReportBatch(oODataModel, oPayload, function () {
-                    oViewModel.setProperty("/busy", false);
-                    MessageBox.success(this._i18n("msgReportBatchSaved") + " (ID: " + oPayload.batchId + ")");
-                }.bind(this), function (oError) {
-                    oViewModel.setProperty("/busy", false);
-                    MessageBox.error("Errore nel salvataggio del batch: " + (oError.statusText || oError.status || ""));
+                return new Promise(function (resolve, reject) {
+                    models.saveReportBatch(oODataModel, oPayload, function () {
+                        resolve(oPayload);
+                    }, reject);
+                }).catch(function (oError) {
+                    var sDetails = oError && (oError.statusText || oError.status || oError.message);
+                    throw new Error("Errore nel salvataggio del batch: " + (sDetails || "Errore non specificato."));
                 });
-            } catch (oError) {
+            }).then(function (oPayload) {
                 oViewModel.setProperty("/busy", false);
-                MessageBox.error("Errore nella preparazione del batch: " + oError.message);
-            }
+                sap.m.MessageBox.success(this._i18n("msgReportBatchSaved") + " (ID: " + oPayload.batchId + ")");
+            }.bind(this)).catch(function (oError) {
+                oViewModel.setProperty("/busy", false);
+                var sMessage = oError && oError.message ? oError.message : String(oError);
+                sap.m.MessageBox.error(sMessage.indexOf("Errore nel salvataggio del batch:") === 0 ? sMessage : "Errore nella preparazione del batch: " + sMessage);
+            });
         },
         _i18n: function (sKey) {
             return this.getOwnerComponent().getModel("i18n").getResourceBundle().getText(sKey);

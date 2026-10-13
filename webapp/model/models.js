@@ -239,9 +239,11 @@ sap.ui.define([
                 }).filter(function (sUser, iIndex, aValues) {
                     return !!sUser && aValues.indexOf(sUser) === iIndex;
                 });
-                fnSuccess({ results: aUsers.map(function (sUser) {
-                    return { utente: sUser };
-                }) });
+                fnSuccess({
+                    results: aUsers.map(function (sUser) {
+                        return { utente: sUser };
+                    })
+                });
             }, fnError);
         },
         fetchSocietyHelp: function (oODataModel, fnSuccess, fnError) {
@@ -305,11 +307,15 @@ sap.ui.define([
             var aRows = aEntries.map(function (oEntry) {
                 var oRow = {};
                 oEntityType.property.forEach(function (oProperty) {
-                    var vValue = oEntry[oProperty.name];
+                    var vValue = oEntry ? oEntry[oProperty.name] : undefined;
                     if (vValue === undefined) {
                         return;
                     }
-                    if (oProperty.type === "Edm.Time" && vValue !== null && typeof vValue === "object") {
+                    if (vValue === null) {
+                        oRow[oProperty.name] = null;
+                        return;
+                    }
+                    if (oProperty.type === "Edm.Time" && typeof vValue === "object") {
                         var iSeconds = Math.floor(vValue.ms / 1000);
                         if (!Number.isFinite(iSeconds) || iSeconds < 0) {
                             throw new Error("Ora di storicizzazione non valida.");
@@ -327,19 +333,23 @@ sap.ui.define([
         },
         saveReportBatch: function (oODataModel, oPayload, fnSuccess, fnError) {
             var sServiceUrl = oODataModel.getServiceUrl().replace(/\/$/, "");
-            oODataModel.refreshSecurityToken(function () {
-                jQuery.ajax({
-                    url: sServiceUrl + "/amministrTraspBatch",
-                    method: "POST",
-                    contentType: "application/json",
-                    headers: {
-                        "X-CSRF-Token": oODataModel.getSecurityToken()
-                    },
-                    data: JSON.stringify(oPayload),
-                    success: fnSuccess,
-                    error: fnError
+            oODataModel.metadataLoaded(true).then(function () {
+                return new Promise(function (resolve, reject) {
+                    oODataModel.refreshSecurityToken(function () {
+                        jQuery.ajax({
+                            url: sServiceUrl + "/amministrTraspBatch",
+                            method: "POST",
+                            contentType: "application/json",
+                            headers: {
+                                "X-CSRF-Token": oODataModel.getSecurityToken()
+                            },
+                            data: JSON.stringify(oPayload),
+                            success: resolve,
+                            error: reject
+                        });
+                    }, reject, true);
                 });
-            }, fnError, true);
+            }).then(fnSuccess).catch(fnError);
         },
     };
 });
