@@ -3,8 +3,13 @@ sap.ui.define([
     "sap/ui/model/json/JSONModel",
     "../model/models",
     "sap/ui/export/Spreadsheet",
-    "sap/ui/export/library"
-], function (Controller, JSONModel, models, Spreadsheet, exportLibrary) {
+    "sap/m/MessageBox",
+    "sap/ui/comp/valuehelpdialog/ValueHelpDialog",
+    "sap/ui/table/Table",
+    "sap/ui/table/Column",
+    "sap/m/Label",
+    "sap/m/Text"
+], function (Controller, JSONModel, models, Spreadsheet, MessageBox, ValueHelpDialog, Table, Column, Label, Text) {
     "use strict";
     return Controller.extend("reportamministrazionetrasparenza.controller.History", {
         Spreadsheet: Spreadsheet,
@@ -12,85 +17,189 @@ sap.ui.define([
         onInit: function () {
             this.getView().setModel(models.createHistoryViewModel(), "historyViewModel");
             this.getView().setModel(models.createHistoryModel(), "historyModel");
+            this.byId("resultsTable").setP13nTitle(this._i18n("p13nDialogTitle"));
+        },
+        onExit: function () {
+            if (this._oValueHelpDialog) {
+                this._oValueHelpDialog.destroy();
+            }
+        },
+        onP13nPress: function (oEvent) {
+            this.byId("resultsTable").openP13n(oEvent);
         },
         onNavigateBack: function () {
             this.getOwnerComponent().getRouter().navTo("RouteWorklist");
         },
         onValueHelpUtente: function () {
-            this._sCurrentValueHelpField = "miFilterUtente";
-            this._sCurrentValueHelpTitle = this._i18n("lblUtente");
-            this._aCurrentValueHelpEntries = [
-                { key: "USER01", text: "USER01 - Utente Esempio 1" },
-                { key: "USER02", text: "USER02 - Utente Esempio 2" },
-                { key: "USER03", text: "USER03 - Utente Esempio 3" }
-            ];
-            this._openValueHelpDialog();
+            this._loadValueHelp("miFilterUtente", "lblUtente", function (fnSuccess, fnError) {
+                return models.fetchHistoryUserHelp(this.getOwnerComponent().getModel(), fnSuccess, fnError);
+            }.bind(this), "utente", "utente");
         },
-        _openValueHelpDialog: function () {
+        onValueHelpUnitaEconomica: function () {
+            this._loadValueHelp("miFilterUnitaEconomica", "lblUnitaEconomica", function (fnSuccess, fnError) {
+                return models.fetchIdUniEconomicaHelp(this.getOwnerComponent().getModel(), "", fnSuccess, fnError);
+            }.bind(this), "numUniEconomicia", "numOgg");
+        },
+        onValueHelpTipoOggetto: function () {
+            this._loadValueHelp("miFilterTipoOggetto", "lblTipoOggetto", function (fnSuccess, fnError) {
+                return models.fetchTipoOggettoHelp(this.getOwnerComponent().getModel(), fnSuccess, fnError);
+            }.bind(this), "tipoOggArc", "defTipoOggArc");
+        },
+        onValueHelpOggettoArchitettonico: function () {
+            this._loadValueHelp("miFilterOggettoArchitettonico", "lblOggettoArchitettonico", function (fnSuccess, fnError) {
+                return models.fetchIdOggettoArcHelp(this.getOwnerComponent().getModel(),
+                    this.byId("miFilterOggettoArchitettonico").getValue().trim(), fnSuccess, fnError);
+            }.bind(this), "idOggArc", "def");
+        },
+        _loadValueHelp: function (sField, sTitle, fnFetch, sKey, sDescription) {
+            var oViewModel = this.getView().getModel("historyViewModel");
+            if (oViewModel.getProperty("/busy")) {
+                return;
+            }
+            oViewModel.setProperty("/busy", true);
+            var fnError = function () {
+                oViewModel.setProperty("/busy", false);
+                MessageBox.error(this._i18n("msgValueHelpLoadError"));
+            }.bind(this);
+            try {
+                fnFetch(function (oData) {
+                    oViewModel.setProperty("/busy", false);
+                    this._openValueHelpDialog(sField, this._i18n(sTitle), (oData.results || []).map(function (oEntry) {
+                        return { key: oEntry[sKey], text: oEntry[sDescription] || oEntry[sKey] };
+                    }));
+                }.bind(this), fnError);
+            } catch (oError) {
+                fnError(oError);
+            }
+        },
+        _openValueHelpDialog: function (sField, sTitle, aEntries) {
+            this._sCurrentValueHelpField = sField;
             if (!this._oValueHelpDialog) {
-                this._oValueHelpDialog = sap.ui.xmlfragment(
-                    this.getView().getId(),
-                    "reportamministrazionetrasparenza.view.fragment.ValueHelpDialog",
-                    this
-                );
+                this._oValueHelpDialog = new ValueHelpDialog({
+                    supportMultiselect: true,
+                    supportRanges: true,
+                    ok: this.onValueHelpOk.bind(this),
+                    cancel: this.onValueHelpCancel.bind(this)
+                });
                 this.getView().addDependent(this._oValueHelpDialog);
             }
-            var oTable = new sap.ui.table.Table({
+            var oTable = new Table({
                 visibleRowCount: 5,
                 columns: [
-                    new sap.ui.table.Column({
-                        label: new sap.m.Label({ text: this._i18n("vhdColKey") }),
-                        template: new sap.m.Text({ text: "{valueHelpData>key}" }),
+                    new Column({
+                        label: new Label({ text: this._i18n("vhdColKey") }),
+                        template: new Text({ text: "{valueHelpData>key}" }),
                         width: "8rem"
                     }),
-                    new sap.ui.table.Column({
-                        label: new sap.m.Label({ text: this._i18n("vhdColText") }),
-                        template: new sap.m.Text({ text: "{valueHelpData>text}" }),
+                    new Column({
+                        label: new Label({ text: this._i18n("vhdColText") }),
+                        template: new Text({ text: "{valueHelpData>text}" }),
                         width: "20rem"
                     })
                 ]
             });
             oTable.bindRows("valueHelpData>/entries");
             this._oValueHelpDialog.setTable(oTable);
+            if (this._oValueHelpTable) {
+                this._oValueHelpTable.destroy();
+            }
+            this._oValueHelpTable = oTable;
             var oValueHelpDataModel = new JSONModel({
-                entries: this._aCurrentValueHelpEntries
+                entries: aEntries
             });
+            oValueHelpDataModel.setSizeLimit(Math.max(100, aEntries.length));
             this._oValueHelpDialog.setModel(oValueHelpDataModel, "valueHelpData");
             var oInput = this.byId(this._sCurrentValueHelpField);
-            this._oValueHelpDialog.setTokens(oInput.getTokens());
+            this._oValueHelpDialog.setKey("key");
+            this._oValueHelpDialog.setDescriptionKey("text");
+            this._oValueHelpDialog.setTokens(oInput.getTokens().map(function (oToken) {
+                return oToken.clone();
+            }));
             this._oValueHelpDialog.setRangeKeyFields([
                 { label: this._i18n("vhdColKey"), key: "key", type: "string" }
             ]);
-            this._oValueHelpDialog.setTitle(this._sCurrentValueHelpTitle);
+            this._oValueHelpDialog.setTitle(sTitle);
+            this._oValueHelpDialog.update();
             this._oValueHelpDialog.open();
         },
         onValueHelpOk: function (oEvent) {
             var aTokens = oEvent.getParameter("tokens") || [];
             var oInput = this.byId(this._sCurrentValueHelpField);
             oInput.setTokens(aTokens);
+            oInput.setValue("");
             this._oValueHelpDialog.close();
         },
         onValueHelpCancel: function () {
             this._oValueHelpDialog.close();
         },
+        _getHistorySelections: function (sId) {
+            var oInput = this.byId(sId);
+            var aSelections = oInput.getTokens().map(function (oToken) {
+                var oRange = oToken.data("range");
+                return oRange || { operation: "EQ", value1: oToken.getKey() || oToken.getText(), exclude: false };
+            });
+            if (oInput.getValue().trim()) {
+                aSelections.push({ operation: "EQ", value1: oInput.getValue().trim(), exclude: false });
+            }
+            return aSelections;
+        },
         onExecute: function () {
-            var oHistoryModel = this.getView().getModel("historyModel");
-            oHistoryModel.setProperty("/results", models.createHistoryMockEntries());
+            var oViewModel = this.getView().getModel("historyViewModel");
+            if (oViewModel.getProperty("/busy")) {
+                return;
+            }
+            var oFrom = this.byId("dpFilterDataDa");
+            var oTo = this.byId("dpFilterDataA");
+            if ((oFrom.getValue() && !oFrom.isValidValue()) || (oTo.getValue() && !oTo.isValidValue()) ||
+                (oFrom.getDateValue() && oTo.getDateValue() && oFrom.getDateValue() > oTo.getDateValue())) {
+                MessageBox.error(this._i18n("msgHistoryInvalidDates"));
+                return;
+            }
+            var oSelection = {
+                dateFrom: oFrom.getValue(),
+                dateTo: oTo.getValue(),
+                utente: this._getHistorySelections("miFilterUtente"),
+                unitaEconomica: this._getHistorySelections("miFilterUnitaEconomica"),
+                tipoOggetto: this._getHistorySelections("miFilterTipoOggetto"),
+                oggettoArchitettonico: this._getHistorySelections("miFilterOggettoArchitettonico")
+            };
+            var fnError = function () {
+                oViewModel.setProperty("/busy", false);
+                MessageBox.error(this._i18n("msgHistoryLoadError"));
+            }.bind(this);
+            this.byId("resultsTable").clearSelection();
+            oViewModel.setProperty("/exportEnabled", false);
+            oViewModel.setProperty("/busy", true);
+            try {
+                models.fetchHistoryData(this.getOwnerComponent().getModel(), oSelection, function (oData) {
+                    var aResults = models.mapReportEntries(oData.results || []);
+                    var oHistoryModel = this.getView().getModel("historyModel");
+                    oHistoryModel.setSizeLimit(Math.max(100, aResults.length));
+                    oHistoryModel.setProperty("/results", aResults);
+                    oViewModel.setProperty("/busy", false);
+                }.bind(this), fnError);
+            } catch (oError) {
+                fnError(oError);
+            }
         },
         onResultsSelectionChange: function () {
-            var oTable = this.byId("historyTable");
+            var oTable = this.byId("resultsTable");
             var oHistoryViewModel = this.getView().getModel("historyViewModel");
             var aSelectedIndices = oTable.getSelectedIndices();
             oHistoryViewModel.setProperty("/exportEnabled", aSelectedIndices.length > 0);
         },
         onExportSelection: function () {
-            var oTable = this.byId("historyTable");
-            var oHistoryModel = this.getView().getModel("historyModel");
+            var oTable = this.byId("resultsTable");
             var aSelectedIndices = oTable.getSelectedIndices();
-            var aAllEntries = oHistoryModel.getProperty("/results");
             var aSelectedEntries = aSelectedIndices.map(function (iIndex) {
-                return aAllEntries[iIndex];
+                var oContext = oTable.getContextByIndex(iIndex);
+                return oContext && oContext.getObject();
+            }).filter(function (oEntry) {
+                return !!oEntry;
             });
+            if (!aSelectedEntries.length || this.getView().getModel("historyViewModel").getProperty("/busy")) {
+                return;
+            }
             var aColumns = [
                 { label: this._i18n("colSocieta"), property: "societa" },
                 { label: this._i18n("colUnitaEconomica"), property: "unitaEconomica" },
@@ -149,8 +258,10 @@ sap.ui.define([
                 dataSource: aSelectedEntries,
                 fileName: this._i18n("storicoTitle") + "_" + this._formatExportTimestamp() + ".xlsx"
             };
-            var oSheet = new Spreadsheet(oSettings);
-            oSheet.build().finally(function () {
+            var oSheet = new this.Spreadsheet(oSettings);
+            oSheet.build().catch(function () {
+                MessageBox.error(this._i18n("msgHistoryExportError"));
+            }.bind(this)).finally(function () {
                 oSheet.destroy();
             });
         },

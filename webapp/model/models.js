@@ -160,82 +160,89 @@ sap.ui.define([
                 };
             });
         },
-        fetchHistoryData: function (sDateFrom, sDateTo) {
-            var oDeferred = jQuery.Deferred();
-            var oODataModel = sap.ui.getCore().getComponent().getModel();
+        fetchHistoryData: function (oODataModel, oSelection, fnSuccess, fnError) {
+            return oODataModel.metadataLoaded(true).then(function () {
+                return this._fetchHistoryData(oODataModel, oSelection, fnSuccess, fnError);
+            }.bind(this)).catch(fnError);
+        },
+        _fetchHistoryData: function (oODataModel, oSelection, fnSuccess, fnError) {
             var aFilters = [];
-            if (sDateFrom) {
-                aFilters.push(new sap.ui.model.Filter("dtStorico", sap.ui.model.FilterOperator.GE, sDateFrom));
-            }
-            if (sDateTo) {
-                aFilters.push(new sap.ui.model.Filter("dtStorico", sap.ui.model.FilterOperator.LE, sDateTo));
-            }
-            oODataModel.read("/amministrTrasp", {
-                filters: aFilters.length > 0 ? [new sap.ui.model.Filter(aFilters, true)] : [],
-                success: function (oData) {
-                    var aResults = oData.results || [];
-                    var aTransformedData = aResults.map(function (item) {
-                        return {
-                            societa: item.soc || "",
-                            unitaEconomica: item.uniEcon || "",
-                            compendio: item.compendio || "",
-                            descrizTipoComp: item.descrComp || "",
-                            definizioneUE: item.defUniEcon || "",
-                            descrBenePatrimoniale: item.descrComp || "",
-                            descrNaturaGiuridica: item.desNatGiur || "",
-                            descrTitoloUtilizzo: item.desTitUtil || "",
-                            via: item.viaBe || "",
-                            numeroCivico: item.numCivicoBe || "",
-                            cap: item.capBe || "",
-                            localita: item.locBe || "",
-                            regione: item.regBe || "",
-                            chiavePaesiRegioni: item.paeseRegBe || "",
-                            oggettoArchitett: item.idOggArc || "",
-                            tipoOggArchitett: item.tipoOggArc || "",
-                            defOggArch: item.defOggArc || "",
-                            funzione: item.funz || "",
-                            businessPartner: item.busPartner || "",
-                            denominazioneDitta: item.denomDitta || "",
-                            descrTpEdifTerr: item.desTpEdTer || "",
-                            descrBeneCulturale: item.descr3 || "",
-                            idCatCatastale: item.IdCat || "",
-                            percentRivalutaz: item.percRiv ? item.percRiv.toString() : "0",
-                            coeffRivalutaz: item.coeffRiv ? item.coeffRiv.toString() : "0",
-                            notaAddizionaleImmobile: item.desAdd || "",
-                            stAccatastam: item.stAccatast || "",
-                            tipoCatasto: item.tipoCatasto || "",
-                            denominatore: item.denominatore || "",
-                            tipoParticella: item.tipoPart || "",
-                            codComCatTav: item.codComCat || "",
-                            codiceBelfiore: item.codBelf || "",
-                            foglio: item.foglio || "",
-                            graffatoFoglio: item.graffFoglio || "",
-                            sezioneUrbana: item.sezUrb || "",
-                            sezioneAmministr: item.sezAmmin || "",
-                            particellaCatasto: item.part || "",
-                            sub: item.sub || "",
-                            graffMapSub: item.grMapSub || "",
-                            descrClasse: item.descr4 || "",
-                            variazioneDal: item.variazDal || "",
-                            variazioneAl: item.variazAl || "",
-                            superficieMq: item.dim1 ? item.dim1.toString() : "0",
-                            cubaturaMc: item.dim2 ? item.dim2.toString() : "0",
-                            rendita: item.rendAcq ? item.rendAcq.toString() : "0",
-                            dataRivRend: item.dataAcqRend || "",
-                            tipoDiCalcolo: item.tipoCalc || "",
-                            valOggArch: item.valOggArch ? item.valOggArch.toString() : "0",
-                            redditoDominicale: item.redDomAcq ? item.redDomAcq.toString() : "0",
-                            redditoAgrario: item.redAgrAcq ? item.redAgrAcq.toString() : "0",
-                            note: item.note || ""
-                        };
-                    });
-                    oDeferred.resolve(aTransformedData);
-                },
-                error: function (oError) {
-                    oDeferred.reject(oError);
+            var oMetaModel = oODataModel.getMetaModel();
+            var oEntitySet = oMetaModel.getODataEntitySet("amministrTrasp");
+            var oEntityType = oEntitySet && oMetaModel.getODataEntityType(oEntitySet.entityType);
+            var oDateProperty = oEntityType && oMetaModel.getODataProperty(oEntityType, "dtStorico");
+            var fnDateValue = function (sDate) {
+                if (oDateProperty && (oDateProperty.type === "Edm.DateTime" || oDateProperty.type === "Edm.DateTimeOffset")) {
+                    return new Date(Date.UTC(Number(sDate.slice(0, 4)), Number(sDate.slice(4, 6)) - 1, Number(sDate.slice(6, 8))));
                 }
-            });
-            return oDeferred.promise();
+                return sDate;
+            };
+            if (oSelection.dateFrom) {
+                aFilters.push(new Filter("dtStorico", FilterOperator.GE, fnDateValue(oSelection.dateFrom)));
+            }
+            if (oSelection.dateTo) {
+                var vDateTo = fnDateValue(oSelection.dateTo);
+                if (vDateTo instanceof Date) {
+                    vDateTo.setUTCDate(vDateTo.getUTCDate() + 1);
+                    aFilters.push(new Filter("dtStorico", FilterOperator.LT, vDateTo));
+                } else {
+                    aFilters.push(new Filter("dtStorico", FilterOperator.LE, vDateTo));
+                }
+            }
+            [
+                { path: "utente", selections: oSelection.utente },
+                { path: "uniEcon", selections: oSelection.unitaEconomica },
+                { path: "tipoOggArc", selections: oSelection.tipoOggetto },
+                { path: "idOggArc", selections: oSelection.oggettoArchitettonico }
+            ].forEach(function (oField) {
+                var oFilter = this._createReportFieldFilter(oField.path, oField.selections);
+                if (oFilter) {
+                    aFilters.push(oFilter);
+                }
+            }, this);
+            return this._readHistoryPages(oODataModel, {
+                filters: aFilters.length ? [new Filter({ filters: aFilters, and: true })] : []
+            }, fnSuccess, fnError);
+        },
+        _readHistoryPages: function (oODataModel, mParameters, fnSuccess, fnError) {
+            var aEntries = [];
+            var fnRead = function (sPath, mOptions) {
+                return oODataModel.read(sPath, Object.assign({}, mOptions, {
+                    success: function (oData) {
+                        aEntries = aEntries.concat(oData.results || []);
+                        if (oData.__next) {
+                            var aNext = /(?:^|\/)amministrTrasp(\?.+)$/.exec(oData.__next);
+                            if (!aNext) {
+                                fnError(new Error("Pagina successiva dello storico non valida."));
+                                return;
+                            }
+                            var mNextParameters = Object.create(null);
+                            new URLSearchParams(aNext[1]).forEach(function (sValue, sName) {
+                                mNextParameters[sName] = sValue;
+                            });
+                            fnRead("/amministrTrasp", { urlParameters: mNextParameters });
+                        } else {
+                            fnSuccess({ results: aEntries });
+                        }
+                    },
+                    error: fnError
+                }));
+            };
+            return fnRead("/amministrTrasp", mParameters);
+        },
+        fetchHistoryUserHelp: function (oODataModel, fnSuccess, fnError) {
+            return this._readHistoryPages(oODataModel, {
+                urlParameters: { "$select": "utente" }
+            }, function (oData) {
+                var aUsers = (oData.results || []).map(function (oEntry) {
+                    return oEntry.utente;
+                }).filter(function (sUser, iIndex, aValues) {
+                    return !!sUser && aValues.indexOf(sUser) === iIndex;
+                });
+                fnSuccess({ results: aUsers.map(function (sUser) {
+                    return { utente: sUser };
+                }) });
+            }, fnError);
         },
         fetchSocietyHelp: function (oODataModel, fnSuccess, fnError) {
             return oODataModel.read("/helpSocieta", {
@@ -251,7 +258,7 @@ sap.ui.define([
         },
         fetchIdUniEconomicaHelp: function (oODataModel, sSocieta, fnSuccess, fnError) {
             return oODataModel.read("/helpIdUniEconomica", {
-                filters: [new Filter("soc", FilterOperator.EQ, sSocieta)],
+                filters: sSocieta ? [new Filter("soc", FilterOperator.EQ, sSocieta)] : [],
                 success: fnSuccess,
                 error: fnError
             });
@@ -270,8 +277,8 @@ sap.ui.define([
         createHistoryViewModel: function () {
             var oModel = new JSONModel({
                 busy: false,
-                filterDataStoricizzazioneFrom: null,
-                filterDataStoricizzazioneTo: null,
+                filterDataStoricizzazioneFrom: "",
+                filterDataStoricizzazioneTo: "",
                 filterUtente: [],
                 filterLayoutVariant: "",
                 exportEnabled: false
