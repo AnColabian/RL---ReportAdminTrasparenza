@@ -313,15 +313,14 @@ sap.ui.define([
             var aRows = aEntries.map(function (oEntry) {
                 var oRow = {};
                 oEntityType.property.forEach(function (oProperty) {
-                    var vValue = oEntry ? oEntry[oProperty.name] : undefined;
+                    var vValue = oEntry[oProperty.name];
                     if (vValue === undefined) {
                         return;
                     }
-                    if (vValue === null) {
-                        oRow[oProperty.name] = null;
-                        return;
+                    if (typeof vValue === "string" && vValue.indexOf("\\") !== -1) {
+                        vValue = "";
                     }
-                    if (oProperty.type === "Edm.Time" && typeof vValue === "object") {
+                    if (oProperty.type === "Edm.Time" && vValue !== null && typeof vValue === "object") {
                         var iSeconds = Math.floor(vValue.ms / 1000);
                         if (!Number.isFinite(iSeconds) || iSeconds < 0) {
                             throw new Error("Ora di storicizzazione non valida.");

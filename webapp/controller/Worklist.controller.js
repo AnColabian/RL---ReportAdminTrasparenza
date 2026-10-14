@@ -241,6 +241,7 @@ sap.ui.define([
                 return oODataModel.getMetaModel().loaded();
             }).then(function () {
                 var oPayload = models.createReportBatchPayload(oODataModel, aRawResults);
+                oPayload = JSON.parse(JSON.stringify(oPayload).replaceAll("\\u0000", ""))
                 return new Promise(function (resolve, reject) {
                     models.saveReportBatch(oODataModel, oPayload, function () {
                         resolve(oPayload);
