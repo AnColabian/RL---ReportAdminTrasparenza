@@ -69,30 +69,30 @@ sap.ui.define([
                 this._oColumnsModel.setProperty("/items", aColumns);
             }
             if (!this._oP13nDialog) {
-                this._oP13nDialog = new Dialog({
+                this._oP13nDialog = new sap.m.Dialog({
                     title: this._i18n("p13nDialogTitle"),
                     contentWidth: "34rem",
                     contentHeight: "42rem",
                     draggable: true,
                     resizable: true,
                     content: [
-                        new VBox({
+                        new sap.m.VBox({
                             items: [
-                                new HBox({
+                                new sap.m.HBox({
                                     items: [
-                                        new SearchField({
+                                        new sap.m.SearchField({
                                             width: "100%",
                                             liveChange: this._onP13nSearch.bind(this)
                                         })
                                     ]
                                 }),
-                                new List({
+                                new sap.m.List({
                                     id: this.createId("p13nColumnsList"),
                                     mode: "MultiSelect",
                                     includeItemInSelection: true,
                                     items: {
                                         path: "p13nColumns>/items",
-                                        template: new StandardListItem({
+                                        template: new sap.m.StandardListItem({
                                             title: "{p13nColumns>label}"
                                         })
                                     },
@@ -101,11 +101,11 @@ sap.ui.define([
                             ]
                         })
                     ],
-                    beginButton: new Button({
+                    beginButton: new sap.m.Button({
                         text: "OK",
                         press: this._onP13nDialogOk.bind(this)
                     }),
-                    endButton: new Button({
+                    endButton: new sap.m.Button({
                         text: "Cancel",
                         press: this._onP13nDialogCancel.bind(this)
                     })
@@ -127,7 +127,7 @@ sap.ui.define([
                 oBinding.filter([]);
                 return;
             }
-            oBinding.filter([new Filter("label", FilterOperator.Contains, sValue)]);
+            oBinding.filter([new sap.ui.model.Filter("label", sap.ui.model.FilterOperator.Contains, sValue)]);
         },
         _syncP13nListSelection: function () {
             var oList = this.byId("p13nColumnsList");
