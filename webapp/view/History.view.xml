@@ -74,7 +74,7 @@
             </f:DynamicPageHeader>
         </f:header>
         <f:content>
-         <ctl:P13nGridTable id="resultsTable" persistencyKey="HistoryTable" rows="{historyModel>/items}" selectionMode="MultiToggle" visibleRowCountMode="Auto" minAutoRowCount="10" rowHeight="32">       <ctl:extension>
+         <ctl:P13nGridTable id="resultsTable" persistencyKey="HistoryTable" rows="{historyModel>/results}" selectionMode="MultiToggle" visibleRowCountMode="Auto" minAutoRowCount="10" rowHeight="32">       <ctl:extension>
                     <Toolbar id="resultsToolbar">
                         <Button id="btnExportSelection" text="{i18n>exportSelectionBtn}" icon="sap-icon://excel-attachment" type="Success" enabled="{historyViewModel>/exportEnabled}" press=".onExportSelection" />
                         <ToolbarSpacer />

@@ -71,7 +71,7 @@
             </f:DynamicPageHeader>
         </f:header>
         <f:content>
-            <ctl:P13nGridTable id="resultsTable" persistencyKey="WorklistTable" rows="{reportModel>/items}" selectionMode="MultiToggle" visibleRowCountMode="Auto" minAutoRowCount="10" rowHeight="32">
+            <ctl:P13nGridTable id="resultsTable" persistencyKey="WorklistTable" rows="{reportModel>/results}" selectionMode="MultiToggle" visibleRowCountMode="Auto" minAutoRowCount="10" rowHeight="32">
                 <ctl:extension>
                     <OverflowToolbar>
                         <Title text="{i18n>resultTitle}" level="H4" />

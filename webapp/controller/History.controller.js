@@ -33,9 +33,9 @@ sap.ui.define([
         onInit: function () {
             this.getView().setModel(models.createHistoryViewModel(), "historyViewModel");
             if (!this.getView().getModel("historyModel")) {
-                this.getView().setModel(new JSONModel({ items: [] }), "historyModel");
-            } else if (!Array.isArray(this.getView().getModel("historyModel").getProperty("/items"))) {
-                this.getView().getModel("historyModel").setProperty("/items", []);
+                this.getView().setModel(new JSONModel({ results: [] }), "historyModel");
+            } else if (!Array.isArray(this.getView().getModel("historyModel").getProperty("/results"))) {
+                this.getView().getModel("historyModel").setProperty("/results", []);
             }
             this.byId("resultsTable").setP13nTitle(this._i18n("p13nDialogTitle"));
             var oVmHistory = this.byId("vmHistory");

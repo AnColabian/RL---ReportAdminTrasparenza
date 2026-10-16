@@ -7,6 +7,7 @@ sap.ui.define([
 ], function (JSONModel, Device, Filter, FilterOperator, jQuery) {
     "use strict";
     return {
+        
         createDeviceModel: function () {
             var oModel = new JSONModel(Device);
             oModel.setDefaultBindingMode("OneWay");

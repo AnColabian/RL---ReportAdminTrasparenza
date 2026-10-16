@@ -31,26 +31,26 @@ sap.ui.define([
         Spreadsheet: Spreadsheet,
         models: models,
         onInit: function () {
-            var oViewModel = models.createViewModel();
-            oViewModel.setProperty("/filterSociety", "1000");
-            this.getView().setModel(oViewModel, "viewModel");
-            this.getView().setModel(models.createSocietyModel(), "societyModel");
-            this.getView().setModel(models.createTipoOggettoModel(), "tipoOggettoModel");
-            if (!this.getView().getModel("reportModel")) {
-                this.getView().setModel(new JSONModel({ items: [] }), "reportModel");
-            } else if (!Array.isArray(this.getView().getModel("reportModel").getProperty("/items"))) {
-                this.getView().getModel("reportModel").setProperty("/items", []);
-            }
-            this.byId("resultsTable").setP13nTitle(this._i18n("p13nDialogTitle"));
-            var oVmWorklist = this.byId("vmWorklist");
-            if (oVmWorklist) {
-                this._oWorklistVariantManager = new TableLayoutVariantManager({
-                    table: this.byId("resultsTable"),
-                    variantManagement: oVmWorklist,
-                    persistencyKey: "WorklistTableVariants"
-                });
-            }
-        },
+    var oViewModel = models.createViewModel();
+    oViewModel.setProperty("/filterSociety", "1000");
+    this.getView().setModel(oViewModel, "viewModel");
+    this.getView().setModel(models.createSocietyModel(), "societyModel");
+    this.getView().setModel(models.createTipoOggettoModel(), "tipoOggettoModel");
+    if (!this.getView().getModel("reportModel")) {
+        this.getView().setModel(new JSONModel({ results: [] }), "reportModel");
+    } else if (!Array.isArray(this.getView().getModel("reportModel").getProperty("/results"))) {
+        this.getView().getModel("reportModel").setProperty("/results", []);
+    }
+    this.byId("resultsTable").setP13nTitle(this._i18n("p13nDialogTitle"));
+    var oVmWorklist = this.byId("vmWorklist");
+    if (oVmWorklist) {
+        this._oWorklistVariantManager = new TableLayoutVariantManager({
+            table: this.byId("resultsTable"),
+            variantManagement: oVmWorklist,
+            persistencyKey: "WorklistTableVariants"
+        });
+    }
+},
         onP13nPress: function () {
             var oTable = this.byId("resultsTable");
             var aColumns = oTable.getColumns().map(function (oCol, iIndex) {
