@@ -23,23 +23,6 @@ sap.ui.define([
             this._restorePersistedState();
             this._applyPendingState();
         },
-        exit: function () {
-            if (this._fnStateChange) {
-                Engine.getInstance().detachStateChange(this._fnStateChange);
-                this._fnStateChange = null;
-            }
-            if (Table.prototype.exit) {
-                Table.prototype.exit.apply(this, arguments);
-            }
-        },
-        openP13n: function (oEvent) {
-            this._initP13n();
-            return Engine.getInstance().show(this, ["Columns", "Sorter"], {
-                contentHeight: "35rem",
-                contentWidth: "32rem",
-                source: oEvent ? oEvent.getSource() : this
-            });
-        },
         _initP13n: function () {
             if (this._bP13nRegistered || !this.getColumns().length) {
                 return;
@@ -81,10 +64,63 @@ sap.ui.define([
                 var oState = oEvent.getParameter("state");
                 this._oPendingState = oState;
                 this._applyPendingState();
-                this._persistState();
+                this._persistStateDirect(oState);
             }.bind(this);
             this._oEngine.attachStateChange(this._fnStateChange);
             this._bP13nRegistered = true;
+        },
+        openP13n: function (oEvent) {
+            this._initP13n();
+            return this._oEngine.show(this, ["Columns", "Sorter"], {
+                contentHeight: "35rem",
+                contentWidth: "32rem",
+                source: oEvent ? oEvent.getSource() : this
+            });
+        },
+        _restorePersistedState: function () {
+            var sStorageKey = this._getStorageKey();
+            if (!sStorageKey || !this._oEngine || this._bStateRestored) {
+                return;
+            }
+            var sRawState = window.localStorage.getItem(sStorageKey);
+            if (!sRawState) {
+                this._bStateRestored = true;
+                return;
+            }
+            try {
+                var oState = JSON.parse(sRawState);
+                this._oPendingState = oState;
+                this._applyPendingState();
+                this._oEngine.applyState(this, oState);
+            } catch (e) {
+                window.localStorage.removeItem(sStorageKey);
+            }
+            this._bStateRestored = true;
+        },
+        _persistState: function () {
+            var sStorageKey = this._getStorageKey();
+            if (!sStorageKey || !this._oEngine) {
+                return;
+            }
+            this._oEngine.retrieveState(this).then(function (oState) {
+                window.localStorage.setItem(sStorageKey, JSON.stringify(oState || {}));
+            });
+        },
+        _persistStateDirect: function (oState) {
+            var sStorageKey = this._getStorageKey();
+            if (!sStorageKey) {
+                return;
+            }
+            window.localStorage.setItem(sStorageKey, JSON.stringify(oState || {}));
+        },
+        exit: function () {
+            if (this._fnStateChange && this._oEngine) {
+                this._oEngine.detachStateChange(this._fnStateChange);
+                this._fnStateChange = null;
+            }
+            if (Table.prototype.exit) {
+                Table.prototype.exit.apply(this, arguments);
+            }
         },
         _applyPendingState: function () {
             if (!this._oPendingState) {
@@ -136,34 +172,7 @@ sap.ui.define([
                 return "";
             }
             return "reportamministrazionetrasparenza.p13n." + sPersistencyKey;
-        },
-        _persistState: function () {
-            var sStorageKey = this._getStorageKey();
-            if (!sStorageKey || !this._oEngine) {
-                return;
-            }
-            this._oEngine.retrieveState(this).then(function (oState) {
-                window.localStorage.setItem(sStorageKey, JSON.stringify(oState || {}));
-            });
-        },
-        _restorePersistedState: function () {
-            var sStorageKey = this._getStorageKey();
-            if (!sStorageKey || !this._oEngine || this._bStateRestored) {
-                return;
-            }
-            var sRawState = window.localStorage.getItem(sStorageKey);
-            if (!sRawState) {
-                this._bStateRestored = true;
-                return;
-            }
-            try {
-                var oState = JSON.parse(sRawState);
-                this._oPendingState = oState;
-                this._oEngine.applyState(this, oState);
-            } catch (e) {
-                window.localStorage.removeItem(sStorageKey);
-            }
-            this._bStateRestored = true;
         }
+
     });
 });
