@@ -22,10 +22,10 @@ sap.ui.define([
     "sap/m/SearchField",
     "sap/m/VBox",
     "sap/m/HBox",
-    "sap/m/CheckBox",
     "sap/ui/model/Filter",
     "sap/ui/model/FilterOperator"
-], function (Controller, JSONModel, models, Spreadsheet, exportLibrary, MessageBox, ValueHelpDialog, Table, Column, Label, Text, CheckBox, Input, FilterBar, FilterItem, TableLayoutVariantManager, Dialog, List, StandardListItem, Button, SearchField, VBox, HBox, CheckBox, Filter, FilterOperator) {
+], function (Controller, JSONModel, models, Spreadsheet, exportLibrary, MessageBox, ValueHelpDialog, Table, Column, Label, Text, CheckBox, Input, FilterBar, FilterItem, 
+    TableLayoutVariantManager, Dialog, List, StandardListItem, Button, SearchField, VBox, HBox, Filter, FilterOperator) {
     "use strict";
     return Controller.extend("reportamministrazionetrasparenza.controller.Worklist", {
         Spreadsheet: Spreadsheet,
