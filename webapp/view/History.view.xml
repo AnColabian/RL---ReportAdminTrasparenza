@@ -34,13 +34,13 @@
                                         <Label text="{i18n>lblDataStoricizzazioneA}" labelFor="dpFilterDataA" />
                                         <DatePicker id="dpFilterDataA" value="{historyViewModel>/filterDataStoricizzazioneTo}" valueFormat="yyyyMMdd" displayFormat="dd.MM.yyyy" width="12rem" />
                                     </VBox>
-                                    <VBox class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                                   <!--  <VBox class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
                                         <Label text="{i18n>lblUtente}" labelFor="miFilterUtente" />
                                         <MultiInput id="miFilterUtente" showValueHelp="true" valueHelpRequest=".onValueHelpUtente" width="12rem">
                                             <tokens>
                                             </tokens>
                                         </MultiInput>
-                                    </VBox>
+                                    </VBox> -->
                                     <VBox class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
                                         <Label text="{i18n>lblUnitaEconomica}" labelFor="miFilterUnitaEconomica" />
                                         <MultiInput id="miFilterUnitaEconomica" showValueHelp="true" valueHelpRequest=".onValueHelpUnitaEconomica" width="14rem">

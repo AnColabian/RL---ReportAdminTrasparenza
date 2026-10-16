@@ -109,6 +109,9 @@ sap.ui.define([
                 });
             }.bind(this), fnError);
         },
+        onValueHelpCancel: function () {
+    this._oValueHelpDialog.close();
+},
         _openValueHelpDialog: function (oConfig) {
             var oInput = this.byId(oConfig.field);
             var aEntries = oConfig.entries || [];
