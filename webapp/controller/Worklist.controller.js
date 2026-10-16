@@ -425,51 +425,53 @@ sap.ui.define([
             return aSelections;
         },
         onExecute: function () {
-            var oComponent = this.getOwnerComponent();
-            var oODataModel = oComponent.getModel();
-            var oViewModel = this.getView().getModel("viewModel");
-            if (oViewModel.getProperty("/busy")) {
-                return;
-            }
-            if (!oODataModel) {
-                MessageBox.error("Servizio OData non disponibile.");
-                return;
-            }
-            var oReportModel = oComponent.getModel("reportModel");
-            if (!oReportModel) {
-                oReportModel = models.createReportModel();
-                oComponent.setModel(oReportModel, "reportModel");
-            }
-            var oSelection = {
-                societa: oViewModel.getProperty("/filterSociety"),
-                unitaEconomica: this._getReportSelections("miFilterUnitaEconomica"),
-                tipoOggetto: this._getReportSelections("miFilterTipoOggetto"),
-                oggettoArchitettonico: this._getReportSelections("miFilterOggettoArchitettonico")
-            };
-            var bIsTestMode = oViewModel.getProperty("/filterTest");
-            try {
-                oViewModel.setProperty("/busy", true);
-                var fnLoadSuccess = function (oData) {
-                    var aRawResults = oData.results || [];
-                    oReportModel.setProperty("/results", models.mapReportEntries(aRawResults));
-                    this.byId("resultsTable").clearSelection();
-                    oViewModel.setProperty("/exportEnabled", false);
-                    if (bIsTestMode) {
-                        oViewModel.setProperty("/busy", false);
-                    } else {
-                        this._promptSaveAndSubmitBatch(oODataModel, aRawResults, oViewModel);
-                    }
-                }.bind(this);
-                var fnLoadError = function (oError) {
-                    oViewModel.setProperty("/busy", false);
-                    MessageBox.error("Errore nel caricamento dei dati: " + (oError.statusText || oError.statusCode || ""));
-                };
-                models.fetchReportData(oODataModel, oSelection, fnLoadSuccess, fnLoadError);
-            } catch (oError) {
+    var oView = this.getView();
+    var oODataModel = this.getOwnerComponent().getModel();
+    var oViewModel = oView.getModel("viewModel");
+    if (oViewModel.getProperty("/busy")) {
+        return;
+    }
+    if (!oODataModel) {
+        MessageBox.error("Servizio OData non disponibile.");
+        return;
+    }
+    var oReportModel = oView.getModel("reportModel");
+    if (!oReportModel) {
+        oReportModel = models.createReportModel();
+        oView.setModel(oReportModel, "reportModel");
+    }
+    var oSelection = {
+        societa: oViewModel.getProperty("/filterSociety"),
+        unitaEconomica: this._getReportSelections("miFilterUnitaEconomica"),
+        tipoOggetto: this._getReportSelections("miFilterTipoOggetto"),
+        oggettoArchitettonico: this._getReportSelections("miFilterOggettoArchitettonico")
+    };
+    var bIsTestMode = oViewModel.getProperty("/filterTest");
+    try {
+        oViewModel.setProperty("/busy", true);
+        var fnLoadSuccess = function (oData) {
+            var aRawResults = oData.results || [];
+            var aResults = models.mapReportEntries(aRawResults);
+            oReportModel.setSizeLimit(Math.max(100, aResults.length));
+            oReportModel.setProperty("/results", aResults);
+            this.byId("resultsTable").clearSelection();
+            oViewModel.setProperty("/exportEnabled", false);
+            if (bIsTestMode) {
                 oViewModel.setProperty("/busy", false);
-                MessageBox.error(oError.message);
+            } else {
+                this._promptSaveAndSubmitBatch(oODataModel, aRawResults, oViewModel);
             }
-        },
+        }.bind(this);
+        var fnLoadError = function (oError) {
+            oViewModel.setProperty("/busy", false);
+            MessageBox.error("Errore nel caricamento dei dati: " + (oError.statusText || oError.statusCode || ""));
+        };
+        models.fetchReportData(oODataModel, oSelection, fnLoadSuccess, fnLoadError);
+    } catch (oError) {
+        oViewModel.setProperty("/busy", false);
+        MessageBox.error(oError.message);
+    }
+},
         _promptSaveAndSubmitBatch: function (oODataModel, aRawResults, oViewModel) {
             var self = this;
             MessageBox.confirm(this._i18n("msgSaveReportBatch"), {
