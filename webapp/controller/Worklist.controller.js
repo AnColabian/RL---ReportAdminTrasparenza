@@ -24,7 +24,7 @@ sap.ui.define([
     "sap/m/HBox",
     "sap/ui/model/Filter",
     "sap/ui/model/FilterOperator"
-], function (Controller, JSONModel, models, Spreadsheet, exportLibrary, MessageBox, ValueHelpDialog, Table, Column, Label, Text, CheckBox, Input, FilterBar, FilterItem, 
+], function (Controller, JSONModel, models, Spreadsheet, exportLibrary, MessageBox, ValueHelpDialog, Table, Column, Label, Text, CheckBox, Input, FilterBar, FilterItem,
     TableLayoutVariantManager, Dialog, List, StandardListItem, Button, SearchField, VBox, HBox, Filter, FilterOperator) {
     "use strict";
     return Controller.extend("reportamministrazionetrasparenza.controller.Worklist", {
@@ -36,149 +36,157 @@ sap.ui.define([
             this.getView().setModel(oViewModel, "viewModel");
             this.getView().setModel(models.createSocietyModel(), "societyModel");
             this.getView().setModel(models.createTipoOggettoModel(), "tipoOggettoModel");
+            if (!this.getView().getModel("reportModel")) {
+                this.getView().setModel(new JSONModel({ items: [] }), "reportModel");
+            } else if (!Array.isArray(this.getView().getModel("reportModel").getProperty("/items"))) {
+                this.getView().getModel("reportModel").setProperty("/items", []);
+            }
             this.byId("resultsTable").setP13nTitle(this._i18n("p13nDialogTitle"));
-            this._oWorklistVariantManager = new TableLayoutVariantManager({
-                table: this.byId("resultsTable"),
-                variantManagement: this.byId("vmWorklist"),
-                persistencyKey: "WorklistTableVariants"
-            });
+            var oVmWorklist = this.byId("vmWorklist");
+            if (oVmWorklist) {
+                this._oWorklistVariantManager = new TableLayoutVariantManager({
+                    table: this.byId("resultsTable"),
+                    variantManagement: oVmWorklist,
+                    persistencyKey: "WorklistTableVariants"
+                });
+            }
         },
         onP13nPress: function () {
-    var oTable = this.byId("resultsTable");
-    var aColumns = oTable.getColumns().map(function (oCol, iIndex) {
-        return {
-            key: oCol.data("p13nKey"),
-            label: oCol.getLabel() && oCol.getLabel().getText ? oCol.getLabel().getText() : oCol.data("p13nKey"),
-            visible: oCol.getVisible(),
-            order: iIndex
-        };
-    }).filter(function (oItem) {
-        return !!oItem.key;
-    });
-    if (!this._oColumnsModel) {
-        this._oColumnsModel = new JSONModel({ items: aColumns });
-    } else {
-        this._oColumnsModel.setProperty("/items", aColumns);
-    }
-    if (!this._oP13nDialog) {
-        this._oP13nDialog = new Dialog({
-            title: this._i18n("p13nDialogTitle"),
-            contentWidth: "34rem",
-            contentHeight: "42rem",
-            draggable: true,
-            resizable: true,
-            content: [
-                new VBox({
-                    items: [
-                        new HBox({
+            var oTable = this.byId("resultsTable");
+            var aColumns = oTable.getColumns().map(function (oCol, iIndex) {
+                return {
+                    key: oCol.data("p13nKey"),
+                    label: oCol.getLabel() && oCol.getLabel().getText ? oCol.getLabel().getText() : oCol.data("p13nKey"),
+                    visible: oCol.getVisible(),
+                    order: iIndex
+                };
+            }).filter(function (oItem) {
+                return !!oItem.key;
+            });
+            if (!this._oColumnsModel) {
+                this._oColumnsModel = new JSONModel({ items: aColumns });
+            } else {
+                this._oColumnsModel.setProperty("/items", aColumns);
+            }
+            if (!this._oP13nDialog) {
+                this._oP13nDialog = new Dialog({
+                    title: this._i18n("p13nDialogTitle"),
+                    contentWidth: "34rem",
+                    contentHeight: "42rem",
+                    draggable: true,
+                    resizable: true,
+                    content: [
+                        new VBox({
                             items: [
-                                new SearchField({
-                                    width: "100%",
-                                    liveChange: this._onP13nSearch.bind(this)
+                                new HBox({
+                                    items: [
+                                        new SearchField({
+                                            width: "100%",
+                                            liveChange: this._onP13nSearch.bind(this)
+                                        })
+                                    ]
+                                }),
+                                new List({
+                                    id: this.createId("p13nColumnsList"),
+                                    mode: "MultiSelect",
+                                    includeItemInSelection: true,
+                                    items: {
+                                        path: "p13nColumns>/items",
+                                        template: new StandardListItem({
+                                            title: "{p13nColumns>label}"
+                                        })
+                                    },
+                                    selectionChange: this._onP13nSelectionChange.bind(this)
                                 })
                             ]
-                        }),
-                        new List({
-                            id: this.createId("p13nColumnsList"),
-                            mode: "MultiSelect",
-                            includeItemInSelection: true,
-                            items: {
-                                path: "p13nColumns>/items",
-                                template: new StandardListItem({
-                                    title: "{p13nColumns>label}"
-                                })
-                            },
-                            selectionChange: this._onP13nSelectionChange.bind(this)
                         })
-                    ]
-                })
-            ],
-            beginButton: new Button({
-                text: "OK",
-                press: this._onP13nDialogOk.bind(this)
-            }),
-            endButton: new Button({
-                text: "Cancel",
-                press: this._onP13nDialogCancel.bind(this)
-            })
-        });
-        this.getView().addDependent(this._oP13nDialog);
-        this._oP13nDialog.setModel(this._oColumnsModel, "p13nColumns");
-    }
-    this._syncP13nListSelection();
-    this._oP13nDialog.open();
-},
-_onP13nSearch: function (oEvent) {
-    var sValue = oEvent.getParameter("newValue") || "";
-    var oList = this.byId("p13nColumnsList");
-    var oBinding = oList.getBinding("items");
-    if (!oBinding) {
-        return;
-    }
-    if (!sValue) {
-        oBinding.filter([]);
-        return;
-    }
-    oBinding.filter([new Filter("label", FilterOperator.Contains, sValue)]);
-},
-_syncP13nListSelection: function () {
-    var oList = this.byId("p13nColumnsList");
-    var aItems = oList.getItems();
-    var aData = this._oColumnsModel.getProperty("/items") || [];
-    aItems.forEach(function (oItem) {
-        var oCtx = oItem.getBindingContext("p13nColumns");
-        if (!oCtx) {
-            return;
-        }
-        var oRow = oCtx.getObject();
-        oList.setSelectedItem(oItem, !!oRow.visible);
-    });
-    this._oColumnsSnapshot = JSON.parse(JSON.stringify(aData));
-},
-_onP13nSelectionChange: function (oEvent) {
-    var oItem = oEvent.getParameter("listItem");
-    var bSelected = oEvent.getParameter("selected");
-    var oCtx = oItem.getBindingContext("p13nColumns");
-    if (!oCtx) {
-        return;
-    }
-    var sPath = oCtx.getPath() + "/visible";
-    this._oColumnsModel.setProperty(sPath, bSelected);
-},
-_onP13nDialogOk: function () {
-    var aColumnsState = this._oColumnsModel.getProperty("/items") || [];
-    this._applyColumnsStateToTable(aColumnsState);
-    if (this._oWorklistVariantManager && this._oWorklistVariantManager.updateCurrentVariantState) {
-        this._oWorklistVariantManager.updateCurrentVariantState({ columns: aColumnsState });
-    }
-    this._oP13nDialog.close();
-},
-_onP13nDialogCancel: function () {
-    if (this._oColumnsSnapshot) {
-        this._oColumnsModel.setProperty("/items", JSON.parse(JSON.stringify(this._oColumnsSnapshot)));
-    }
-    this._oP13nDialog.close();
-},
-_applyColumnsStateToTable: function (aColumnsState) {
-    var oTable = this.byId("resultsTable");
-    oTable.getColumns().forEach(function (oCol) {
-        var sKey = oCol.data("p13nKey");
-        var oMatch = aColumnsState.find(function (oItem) { return oItem.key === sKey; });
-        oCol.setVisible(!!(oMatch && oMatch.visible));
-    });
-    aColumnsState.slice().sort(function (a, b) { return a.order - b.order; }).forEach(function (oStateCol, iTarget) {
-        var oCol = oTable.getColumns().find(function (oCurrent) {
-            return oCurrent.data("p13nKey") === oStateCol.key;
-        });
-        if (oCol) {
-            var iCurrent = oTable.indexOfColumn(oCol);
-            if (iCurrent !== iTarget) {
-                oTable.removeColumn(oCol);
-                oTable.insertColumn(oCol, iTarget);
+                    ],
+                    beginButton: new Button({
+                        text: "OK",
+                        press: this._onP13nDialogOk.bind(this)
+                    }),
+                    endButton: new Button({
+                        text: "Cancel",
+                        press: this._onP13nDialogCancel.bind(this)
+                    })
+                });
+                this.getView().addDependent(this._oP13nDialog);
+                this._oP13nDialog.setModel(this._oColumnsModel, "p13nColumns");
             }
-        }
-    });
-},
+            this._syncP13nListSelection();
+            this._oP13nDialog.open();
+        },
+        _onP13nSearch: function (oEvent) {
+            var sValue = oEvent.getParameter("newValue") || "";
+            var oList = this.byId("p13nColumnsList");
+            var oBinding = oList.getBinding("items");
+            if (!oBinding) {
+                return;
+            }
+            if (!sValue) {
+                oBinding.filter([]);
+                return;
+            }
+            oBinding.filter([new Filter("label", FilterOperator.Contains, sValue)]);
+        },
+        _syncP13nListSelection: function () {
+            var oList = this.byId("p13nColumnsList");
+            var aItems = oList.getItems();
+            var aData = this._oColumnsModel.getProperty("/items") || [];
+            aItems.forEach(function (oItem) {
+                var oCtx = oItem.getBindingContext("p13nColumns");
+                if (!oCtx) {
+                    return;
+                }
+                var oRow = oCtx.getObject();
+                oList.setSelectedItem(oItem, !!oRow.visible);
+            });
+            this._oColumnsSnapshot = JSON.parse(JSON.stringify(aData));
+        },
+        _onP13nSelectionChange: function (oEvent) {
+            var oItem = oEvent.getParameter("listItem");
+            var bSelected = oEvent.getParameter("selected");
+            var oCtx = oItem.getBindingContext("p13nColumns");
+            if (!oCtx) {
+                return;
+            }
+            var sPath = oCtx.getPath() + "/visible";
+            this._oColumnsModel.setProperty(sPath, bSelected);
+        },
+        _onP13nDialogOk: function () {
+            var aColumnsState = this._oColumnsModel.getProperty("/items") || [];
+            this._applyColumnsStateToTable(aColumnsState);
+            if (this._oWorklistVariantManager && this._oWorklistVariantManager.updateCurrentVariantState) {
+                this._oWorklistVariantManager.updateCurrentVariantState({ columns: aColumnsState });
+            }
+            this._oP13nDialog.close();
+        },
+        _onP13nDialogCancel: function () {
+            if (this._oColumnsSnapshot) {
+                this._oColumnsModel.setProperty("/items", JSON.parse(JSON.stringify(this._oColumnsSnapshot)));
+            }
+            this._oP13nDialog.close();
+        },
+        _applyColumnsStateToTable: function (aColumnsState) {
+            var oTable = this.byId("resultsTable");
+            oTable.getColumns().forEach(function (oCol) {
+                var sKey = oCol.data("p13nKey");
+                var oMatch = aColumnsState.find(function (oItem) { return oItem.key === sKey; });
+                oCol.setVisible(!!(oMatch && oMatch.visible));
+            });
+            aColumnsState.slice().sort(function (a, b) { return a.order - b.order; }).forEach(function (oStateCol, iTarget) {
+                var oCol = oTable.getColumns().find(function (oCurrent) {
+                    return oCurrent.data("p13nKey") === oStateCol.key;
+                });
+                if (oCol) {
+                    var iCurrent = oTable.indexOfColumn(oCol);
+                    if (iCurrent !== iTarget) {
+                        oTable.removeColumn(oCol);
+                        oTable.insertColumn(oCol, iTarget);
+                    }
+                }
+            });
+        },
         onValueHelpUnitaEconomica: function () {
             var sSocieta = this.getView().getModel("viewModel").getProperty("/filterSociety");
             var fnError = function (oError) {
@@ -262,12 +270,12 @@ _applyColumnsStateToTable: function (aColumnsState) {
             this._oValueHelpDialog.close();
         },
         onVariantSave: function (oEvent) {
-    oEvent.preventDefault();
-    if (!this._oWorklistVariantManager) {
-        return;
-    }
-    this._oWorklistVariantManager.saveVariantByName(oEvent.getParameters());
-},
+            oEvent.preventDefault();
+            if (!this._oWorklistVariantManager) {
+                return;
+            }
+            this._oWorklistVariantManager.saveVariantByName(oEvent.getParameters());
+        },
         _openValueHelpDialog: function (oConfig) {
             var oInput = this.byId(oConfig.field);
             var aEntries = oConfig.entries || [];
