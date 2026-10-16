@@ -76,7 +76,7 @@
                     <OverflowToolbar>
                         <Title text="{i18n>resultTitle}" level="H4" />
                         <ToolbarSpacer />
-                        <vm:VariantManagement id="vmWorklist" showShare="false" showExecuteOnSelection="true" />
+                        <vm:VariantManagement id="vmWorklist" showShare="false" showExecuteOnSelection="true" save=".onVariantSave" />
                         <Button icon="sap-icon://action-settings" tooltip="{i18n>p13nBtnTooltip}" press=".onP13nPress" />
                     </OverflowToolbar>
                 </ctl:extension>

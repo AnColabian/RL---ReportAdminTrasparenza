@@ -5,6 +5,7 @@
     xmlns:t="sap.ui.table"
     xmlns:l="sap.ui.layout"
     xmlns:core="sap.ui.core"
+    xmlns:vm="sap.ui.comp.variants"
     xmlns:ctl="reportamministrazionetrasparenza.control"
     xmlns:customData="http://schemas.sap.com/sapui5/extension/sap.ui.core.CustomData/1" displayBlock="true">
     <f:DynamicPage id="pageHistory" toggleHeaderOnTitleClick="false" busy="{historyViewModel>/busy}">

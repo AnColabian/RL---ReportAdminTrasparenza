@@ -261,6 +261,13 @@ _applyColumnsStateToTable: function (aColumnsState) {
         onValueHelpCancel: function () {
             this._oValueHelpDialog.close();
         },
+        onVariantSave: function (oEvent) {
+    oEvent.preventDefault();
+    if (!this._oWorklistVariantManager) {
+        return;
+    }
+    this._oWorklistVariantManager.saveVariantByName(oEvent.getParameters());
+},
         _openValueHelpDialog: function (oConfig) {
             var oInput = this.byId(oConfig.field);
             var aEntries = oConfig.entries || [];

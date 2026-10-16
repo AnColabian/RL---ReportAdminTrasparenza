@@ -35,59 +35,110 @@ sap.ui.define([
             this._oVariant.attachManage(this._onManage.bind(this));
         },
         _restoreOrInit: function () {
-    var sRaw = window.localStorage.getItem(this._sStorageKey);
-    if (!sRaw) {
-        this._persist();
-        this.applyVariant("STANDARD");
-        return;
-    }
-    try {
-        var oData = JSON.parse(sRaw);
-        if (!oData || !Array.isArray(oData.variants) || !oData.states) {
-            this._persist();
-            this.applyVariant("STANDARD");
-            return;
-        }
-        var aNormalized = [];
-        var mSeenKeys = {};
-        oData.variants.forEach(function (oItem) {
-            if (!oItem || !oItem.key || mSeenKeys[oItem.key]) {
+            var sRaw = window.localStorage.getItem(this._sStorageKey);
+            if (!sRaw) {
+                this._persist();
+                this.applyVariant("STANDARD");
                 return;
             }
-            if (oItem.key === "STANDARD") {
-                aNormalized.push({ key: "STANDARD", name: "Standard", executeOnSelect: true, readOnly: true });
-                mSeenKeys[oItem.key] = true;
+            try {
+                var oData = JSON.parse(sRaw);
+                if (!oData || !Array.isArray(oData.variants)) {
+                    oData = this._oModel.getData();
+                }
+                if (!oData.states || typeof oData.states !== "object") {
+                    oData.states = {};
+                }
+                var aVariants = [];
+                var bHasStandard = false;
+                var mNames = {};
+                (oData.variants || []).forEach(function (oItem) {
+                    if (!oItem || !oItem.key) {
+                        return;
+                    }
+                    if (oItem.key === "STANDARD") {
+                        if (bHasStandard) {
+                            return;
+                        }
+                        bHasStandard = true;
+                        aVariants.push({ key: "STANDARD", name: "Standard", executeOnSelect: true, readOnly: true });
+                        return;
+                    }
+                    var sName = (oItem.name || oItem.key).trim();
+                    if (!sName) {
+                        sName = oItem.key;
+                    }
+                    var sNorm = sName.toLowerCase();
+                    if (mNames[sNorm]) {
+                        oData.states[mNames[sNorm]] = oData.states[oItem.key] || oData.states[mNames[sNorm]];
+                        delete oData.states[oItem.key];
+                        return;
+                    }
+                    mNames[sNorm] = oItem.key;
+                    aVariants.push({ key: oItem.key, name: sName, executeOnSelect: true, readOnly: false });
+                });
+                if (!bHasStandard) {
+                    aVariants.unshift({ key: "STANDARD", name: "Standard", executeOnSelect: true, readOnly: true });
+                }
+                oData.variants = aVariants;
+                var bCurrentExists = aVariants.some(function (oV) { return oV.key === oData.currentKey; });
+                var bDefaultExists = aVariants.some(function (oV) { return oV.key === oData.defaultKey; });
+                oData.defaultKey = bDefaultExists ? oData.defaultKey : "STANDARD";
+                oData.currentKey = bCurrentExists ? oData.currentKey : oData.defaultKey;
+                this._oModel.setData(oData);
+                this._persist();
+                this._applyVariantKey(oData.currentKey || "STANDARD");
+            } catch (e) {
+                this._oModel.setData({
+                    defaultKey: "STANDARD",
+                    currentKey: "STANDARD",
+                    variants: [{ key: "STANDARD", name: "Standard", executeOnSelect: true, readOnly: true }],
+                    states: {}
+                });
+                this._persist();
+                this.applyVariant("STANDARD");
+            }
+        },
+        saveVariantByName: function (mParams) {
+            var sName = ((mParams && mParams.name) || "").trim();
+            if (!sName) {
                 return;
             }
-            aNormalized.push({
-                key: oItem.key,
-                name: oItem.name || oItem.key,
-                executeOnSelect: true,
-                readOnly: false
+            var oData = this._oModel.getData();
+            if (!oData.states) {
+                oData.states = {};
+            }
+            var oState = this._captureTableState();
+            var oExisting = oData.variants.find(function (oItem) {
+                return oItem.key !== "STANDARD" && (oItem.name || "").trim().toLowerCase() === sName.toLowerCase();
             });
-            mSeenKeys[oItem.key] = true;
-        });
-        if (!mSeenKeys.STANDARD) {
-            aNormalized.unshift({ key: "STANDARD", name: "Standard", executeOnSelect: true, readOnly: true });
-        }
-        oData.variants = aNormalized;
-        if (!oData.defaultKey || !mSeenKeys[oData.defaultKey]) {
-            oData.defaultKey = "STANDARD";
-        }
-        if (!oData.currentKey || !mSeenKeys[oData.currentKey]) {
-            oData.currentKey = oData.defaultKey || "STANDARD";
-        }
-        if (!oData.states || typeof oData.states !== "object") {
-            oData.states = {};
-        }
-        this._oModel.setData(oData);
-        this._persist();
-        this._applyVariantKey(oData.currentKey || "STANDARD");
-    } catch (e) {
-        this._persist();
-        this.applyVariant("STANDARD");
-    }
-},
+            if (oExisting) {
+                oExisting.name = sName;
+                oData.states[oExisting.key] = oState;
+                oData.currentKey = oExisting.key;
+                this._oModel.refresh(true);
+                this._persist();
+                this._applyVariantKey(oExisting.key);
+                return;
+            }
+            var sCurrent = oData.currentKey || "STANDARD";
+            var oCurrentVariant = oData.variants.find(function (oItem) { return oItem.key === sCurrent; });
+            if (oCurrentVariant && sCurrent !== "STANDARD") {
+                oCurrentVariant.name = sName;
+                oData.states[sCurrent] = oState;
+                this._oModel.refresh(true);
+                this._persist();
+                this._applyVariantKey(sCurrent);
+                return;
+            }
+            var sNewKey = "V_" + Date.now();
+            oData.variants.push({ key: sNewKey, name: sName, executeOnSelect: true, readOnly: false });
+            oData.states[sNewKey] = oState;
+            oData.currentKey = sNewKey;
+            this._oModel.refresh(true);
+            this._persist();
+            this._applyVariantKey(sNewKey);
+        },
         _persist: function () {
             window.localStorage.setItem(this._sStorageKey, JSON.stringify(this._oModel.getData()));
         },
@@ -96,49 +147,8 @@ sap.ui.define([
             this.applyVariant(sKey);
         },
         _onSave: function (oEvent) {
-    var sName = (oEvent.getParameter("name") || "").trim();
-    var bOverwrite = oEvent.getParameter("overwrite");
-    var sKey = oEvent.getParameter("key");
-    var oData = this._oModel.getData();
-    var oState = this._captureTableState();
-    if (!sName) {
-        return;
-    }
-    if (bOverwrite && sKey && sKey !== "STANDARD") {
-        var oExistingByKey = oData.variants.find(function (oItem) { return oItem.key === sKey; });
-        if (oExistingByKey) {
-            oExistingByKey.name = sName;
-            oData.states[sKey] = oState;
-            oData.currentKey = sKey;
-            this._oModel.refresh(true);
-            this._persist();
-            this._applyVariantKey(sKey);
-            return;
-        }
-    }
-    var oSameName = oData.variants.find(function (oItem) {
-        return oItem.key !== "STANDARD" && (oItem.name || "").toLowerCase() === sName.toLowerCase();
-    });
-    if (oSameName) {
-        oSameName.name = sName;
-        oData.states[oSameName.key] = oState;
-        oData.currentKey = oSameName.key;
-        this._oModel.refresh(true);
-        this._persist();
-        this._applyVariantKey(oSameName.key);
-        return;
-    }
-    var sNewKey = "V_" + Date.now();
-    oData.variants.push({ key: sNewKey, name: sName, executeOnSelect: true, readOnly: false });
-    if (!oData.states) {
-        oData.states = {};
-    }
-    oData.states[sNewKey] = oState;
-    oData.currentKey = sNewKey;
-    this._oModel.refresh(true);
-    this._persist();
-    this._applyVariantKey(sNewKey);
-},
+            this.saveVariantByName(oEvent.getParameters());
+        },
         _onManage: function (oEvent) {
             var aDeleted = oEvent.getParameter("deleted") || [];
             var aRenamed = oEvent.getParameter("renamed") || [];
