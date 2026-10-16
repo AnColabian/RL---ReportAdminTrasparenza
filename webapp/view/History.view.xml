@@ -78,6 +78,7 @@
                     <Toolbar id="resultsToolbar">
                         <Button id="btnExportSelection" text="{i18n>exportSelectionBtn}" icon="sap-icon://excel-attachment" type="Success" enabled="{historyViewModel>/exportEnabled}" press=".onExportSelection" />
                         <ToolbarSpacer />
+                        <vm:VariantManagement id="vmHistory" showShare="false" showExecuteOnSelection="true" save=".onHistoryVariantSave" />
                         <Button id="btnP13n" icon="sap-icon://action-settings" type="Transparent" tooltip="{i18n>p13nBtnTooltip}" press=".onP13nPress" />
                     </Toolbar>
                 </ctl:extension>

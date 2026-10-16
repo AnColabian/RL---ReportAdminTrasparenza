@@ -30,23 +30,26 @@ sap.ui.define([
     return Controller.extend("reportamministrazionetrasparenza.controller.History", {
         Spreadsheet: Spreadsheet,
         models: models,
-        onInit: function () {
-            this.getView().setModel(models.createHistoryViewModel(), "historyViewModel");
-            this.getView().setModel(models.createHistoryModel(), "historyModel");
-            this.byId("resultsTable").setP13nTitle(this._i18n("p13nDialogTitle"));
-            this._oHistoryVariantManager = new TableLayoutVariantManager({
-                table: this.byId("resultsTable"),
-                variantManagement: this.byId("vmHistory"),
-                persistencyKey: "HistoryTableVariants"
-            });
-        },
+      onInit: function () {
+    this.getView().setModel(models.createHistoryViewModel(), "historyViewModel");
+    this.getView().setModel(models.createHistoryModel(), "historyModel");
+    this.byId("resultsTable").setP13nTitle(this._i18n("p13nDialogTitle"));
+    var oVmHistory = this.byId("vmHistory");
+    if (oVmHistory) {
+        this._oHistoryVariantManager = new TableLayoutVariantManager({
+            table: this.byId("resultsTable"),
+            variantManagement: oVmHistory,
+            persistencyKey: "HistoryTableVariants"
+        });
+    }
+},
         onHistoryVariantSave: function (oEvent) {
-            oEvent.preventDefault();
-            if (!this._oHistoryVariantManager) {
-                return;
-            }
-            this._oHistoryVariantManager.saveVariantByName(oEvent.getParameters());
-        },
+    oEvent.preventDefault();
+    if (!this._oHistoryVariantManager) {
+        return;
+    }
+    this._oHistoryVariantManager.saveVariantByName(oEvent.getParameters());
+},
         onExit: function () {
             if (this._oValueHelpDialog) {
                 this._oValueHelpDialog.destroy();
