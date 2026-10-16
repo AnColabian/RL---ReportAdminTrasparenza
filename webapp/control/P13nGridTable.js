@@ -2,10 +2,8 @@ sap.ui.define([
     "sap/ui/table/Table",
     "sap/m/p13n/Engine",
     "sap/m/p13n/MetadataHelper",
-    "sap/m/p13n/SelectionController",
-    "sap/m/p13n/SortController",
-    "sap/ui/model/Sorter"
-], function (Table, Engine, MetadataHelper, SelectionController, SortController, Sorter) {
+    "sap/m/p13n/SelectionController"
+], function (Table, Engine, MetadataHelper, SelectionController) {
     "use strict";
     return Table.extend("reportamministrazionetrasparenza.control.P13nGridTable", {
         metadata: {
@@ -20,21 +18,34 @@ sap.ui.define([
                 Table.prototype.onBeforeRendering.apply(this, arguments);
             }
             this._initP13n();
-            this._restorePersistedState();
-            this._applyPendingState();
+            this._restoreColumnsState();
+            this._applyPendingColumnsState();
+        },
+        exit: function () {
+            if (this._fnStateChange && this._oEngine) {
+                this._oEngine.detachStateChange(this._fnStateChange);
+                this._fnStateChange = null;
+            }
+            if (Table.prototype.exit) {
+                Table.prototype.exit.apply(this, arguments);
+            }
+        },
+        openP13n: function (oEvent) {
+            this._initP13n();
+            return this._oEngine.show(this, ["Columns"], {
+                contentHeight: "35rem",
+                contentWidth: "32rem",
+                source: oEvent ? oEvent.getSource() : this
+            });
         },
         _initP13n: function () {
             if (this._bP13nRegistered || !this.getColumns().length) {
                 return;
             }
             var aMetadata = this.getColumns().map(function (oColumn) {
-                var oTemplate = oColumn.getTemplate();
-                var oBindingInfo = oTemplate && oTemplate.getBindingInfo("text");
-                var oPart = oBindingInfo && oBindingInfo.parts && oBindingInfo.parts[0];
                 return {
                     key: oColumn.data("p13nKey"),
-                    label: oColumn.getLabel().getText(),
-                    path: oPart ? oPart.path : oColumn.data("p13nKey")
+                    label: oColumn.getLabel().getText()
                 };
             }).filter(function (oItem) {
                 return !!oItem.key;
@@ -50,9 +61,6 @@ sap.ui.define([
                         getKeyForItem: function (oColumn) {
                             return oColumn.data("p13nKey");
                         }
-                    }),
-                    Sorter: new SortController({
-                        control: this
                     })
                 }
             });
@@ -62,117 +70,80 @@ sap.ui.define([
                     return;
                 }
                 var oState = oEvent.getParameter("state");
-                this._oPendingState = oState;
-                this._applyPendingState();
-                this._persistStateDirect(oState);
+                if (!oState || !Array.isArray(oState.Columns)) {
+                    return;
+                }
+                this._oPendingColumnsState = oState.Columns;
+                this._applyPendingColumnsState();
+                this._persistColumnsState(oState.Columns);
             }.bind(this);
             this._oEngine.attachStateChange(this._fnStateChange);
             this._bP13nRegistered = true;
         },
-        openP13n: function (oEvent) {
-            this._initP13n();
-            return this._oEngine.show(this, ["Columns", "Sorter"], {
-                contentHeight: "35rem",
-                contentWidth: "32rem",
-                source: oEvent ? oEvent.getSource() : this
-            });
-        },
-        _restorePersistedState: function () {
-            var sStorageKey = this._getStorageKey();
-            if (!sStorageKey || !this._oEngine || this._bStateRestored) {
+        _applyPendingColumnsState: function () {
+            if (!Array.isArray(this._oPendingColumnsState)) {
                 return;
             }
-            var sRawState = window.localStorage.getItem(sStorageKey);
-            if (!sRawState) {
-                this._bStateRestored = true;
-                return;
-            }
-            try {
-                var oState = JSON.parse(sRawState);
-                this._oPendingState = oState;
-                this._applyPendingState();
-                this._oEngine.applyState(this, oState);
-            } catch (e) {
-                window.localStorage.removeItem(sStorageKey);
-            }
-            this._bStateRestored = true;
-        },
-        _persistState: function () {
-            var sStorageKey = this._getStorageKey();
-            if (!sStorageKey || !this._oEngine) {
-                return;
-            }
-            this._oEngine.retrieveState(this).then(function (oState) {
-                window.localStorage.setItem(sStorageKey, JSON.stringify(oState || {}));
-            });
-        },
-        _persistStateDirect: function (oState) {
-            var sStorageKey = this._getStorageKey();
-            if (!sStorageKey) {
-                return;
-            }
-            window.localStorage.setItem(sStorageKey, JSON.stringify(oState || {}));
-        },
-        exit: function () {
-            if (this._fnStateChange && this._oEngine) {
-                this._oEngine.detachStateChange(this._fnStateChange);
-                this._fnStateChange = null;
-            }
-            if (Table.prototype.exit) {
-                Table.prototype.exit.apply(this, arguments);
-            }
-        },
-        _applyPendingState: function () {
-            if (!this._oPendingState) {
-                return;
-            }
-            var oState = this._oPendingState;
-            this._oPendingState = null;
-            if (Array.isArray(oState.Columns)) {
-                this.getColumns().forEach(function (oColumn) {
-                    var sKey = oColumn.data("p13nKey");
-                    var bVisible = oState.Columns.some(function (oColumnState) {
-                        return oColumnState.key === sKey;
-                    });
-                    oColumn.setVisible(bVisible);
+            var aColumnsState = this._oPendingColumnsState;
+            this._oPendingColumnsState = null;
+            var aCurrentColumns = this.getColumns();
+            aCurrentColumns.forEach(function (oColumn) {
+                var sKey = oColumn.data("p13nKey");
+                var bVisible = aColumnsState.some(function (oColumnState) {
+                    return oColumnState.key === sKey;
                 });
-                oState.Columns.forEach(function (oColumnState, iIndex) {
-                    var oColumn = this.getColumns().find(function (oCurrentColumn) {
-                        return oCurrentColumn.data("p13nKey") === oColumnState.key;
-                    });
-                    if (oColumn && this.indexOfColumn(oColumn) !== iIndex) {
+                oColumn.setVisible(bVisible);
+            });
+            aColumnsState.forEach(function (oColumnState, iTargetIndex) {
+                var oColumn = this.getColumns().find(function (oCurrentColumn) {
+                    return oCurrentColumn.data("p13nKey") === oColumnState.key;
+                });
+                if (oColumn) {
+                    var iCurrentIndex = this.indexOfColumn(oColumn);
+                    if (iCurrentIndex !== iTargetIndex) {
                         this.removeColumn(oColumn);
-                        this.insertColumn(oColumn, iIndex);
+                        this.insertColumn(oColumn, iTargetIndex);
                     }
-                }, this);
-            }
-            if (Array.isArray(oState.Sorter)) {
-                this._applySorters(oState.Sorter);
-            }
-        },
-        _applySorters: function (aSorterState) {
-            var aSorters = [];
-            aSorterState.forEach(function (oSortState) {
-                if (oSortState.sorted === false) {
-                    return;
-                }
-                var oProperty = this._oMetadataHelper.getProperty(oSortState.key);
-                if (oProperty) {
-                    aSorters.push(new Sorter(oProperty.path, !!oSortState.descending));
                 }
             }, this);
-            var oBinding = this.getBinding("rows");
-            if (oBinding) {
-                oBinding.sort(aSorters);
-            }
         },
         _getStorageKey: function () {
             var sPersistencyKey = this.getPersistencyKey();
             if (!sPersistencyKey) {
                 return "";
             }
-            return "reportamministrazionetrasparenza.p13n." + sPersistencyKey;
+            return "reportamministrazionetrasparenza.p13n.columns." + sPersistencyKey;
+        },
+        _persistColumnsState: function (aColumnsState) {
+            var sStorageKey = this._getStorageKey();
+            if (!sStorageKey) {
+                return;
+            }
+            window.localStorage.setItem(sStorageKey, JSON.stringify(aColumnsState));
+        },
+        _restoreColumnsState: function () {
+            if (this._bColumnsStateRestored) {
+                return;
+            }
+            var sStorageKey = this._getStorageKey();
+            if (!sStorageKey) {
+                this._bColumnsStateRestored = true;
+                return;
+            }
+            var sRawState = window.localStorage.getItem(sStorageKey);
+            if (!sRawState) {
+                this._bColumnsStateRestored = true;
+                return;
+            }
+            try {
+                var aColumnsState = JSON.parse(sRawState);
+                if (Array.isArray(aColumnsState)) {
+                    this._oPendingColumnsState = aColumnsState;
+                }
+            } catch (e) {
+                window.localStorage.removeItem(sStorageKey);
+            }
+            this._bColumnsStateRestored = true;
         }
-
     });
 });

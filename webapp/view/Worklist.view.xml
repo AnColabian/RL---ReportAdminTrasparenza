@@ -6,6 +6,7 @@
     xmlns:l="sap.ui.layout"
     xmlns:core="sap.ui.core"
     xmlns:ctl="reportamministrazionetrasparenza.control"
+    xmlns:vm="sap.ui.comp.variants"
     xmlns:customData="http://schemas.sap.com/sapui5/extension/sap.ui.core.CustomData/1" displayBlock="true">
     <f:DynamicPage id="pageWorklist" toggleHeaderOnTitleClick="false">
         <f:title>
@@ -72,11 +73,12 @@
         <f:content>
             <ctl:P13nGridTable id="resultsTable" persistencyKey="WorklistTable" rows="{reportModel>/items}" selectionMode="MultiToggle" visibleRowCountMode="Auto" minAutoRowCount="10" rowHeight="32">
                 <ctl:extension>
-                    <Toolbar id="resultsToolbar">
-                        <Button id="btnExportSelection" text="{i18n>exportSelectionBtn}" icon="sap-icon://excel-attachment" type="Success" enabled="{viewModel>/exportEnabled}" press=".onExportSelection" />
+                    <OverflowToolbar>
+                        <Title text="{i18n>resultTitle}" level="H4" />
                         <ToolbarSpacer />
-                        <Button id="btnP13n" icon="sap-icon://action-settings" type="Transparent" tooltip="{i18n>p13nBtnTooltip}" press=".onP13nPress" />
-                    </Toolbar>
+                        <vm:VariantManagement id="vmWorklist" showShare="false" showExecuteOnSelection="true" />
+                        <Button icon="sap-icon://action-settings" tooltip="{i18n>p13nBtnTooltip}" press=".onP13nPress" />
+                    </OverflowToolbar>
                 </ctl:extension>
                 <ctl:columns>
                     <t:Column width="6rem" customData:p13nKey="societa">
