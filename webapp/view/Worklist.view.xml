@@ -70,7 +70,7 @@
             </f:DynamicPageHeader>
         </f:header>
         <f:content>
-            <ctl:P13nGridTable id="resultsTable" rows="{reportModel>/results}" selectionMode="MultiToggle" enableSelectAll="true" rowSelectionChange=".onResultsSelectionChange" visibleRowCount="12">
+            <ctl:P13nGridTable id="resultsTable" persistencyKey="WorklistTable" rows="{reportModel>/items}" selectionMode="MultiToggle" visibleRowCountMode="Auto" minAutoRowCount="10" rowHeight="32">
                 <ctl:extension>
                     <Toolbar id="resultsToolbar">
                         <Button id="btnExportSelection" text="{i18n>exportSelectionBtn}" icon="sap-icon://excel-attachment" type="Success" enabled="{viewModel>/exportEnabled}" press=".onExportSelection" />
