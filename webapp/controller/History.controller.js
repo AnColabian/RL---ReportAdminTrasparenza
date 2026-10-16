@@ -33,25 +33,63 @@ sap.ui.define([
         onValueHelpUtente: function () {
             this._loadValueHelp("miFilterUtente", "lblUtente", function (fnSuccess, fnError) {
                 return models.fetchHistoryUserHelp(this.getOwnerComponent().getModel(), fnSuccess, fnError);
-            }.bind(this), "utente", "utente");
+            }.bind(this), {
+                key: "utente",
+                description: "utente",
+                tokenKey: "utente",
+                columns: [
+                    { property: "utente", label: "lblUtente", width: "18rem" }
+                ]
+            });
         },
         onValueHelpUnitaEconomica: function () {
             this._loadValueHelp("miFilterUnitaEconomica", "lblUnitaEconomica", function (fnSuccess, fnError) {
                 return models.fetchIdUniEconomicaHelp(this.getOwnerComponent().getModel(), "", fnSuccess, fnError);
-            }.bind(this), "numUniEconomicia", "numOgg");
+            }.bind(this), {
+                key: "numUniEconomicia",
+                description: "numOgg",
+                tokenKey: "numUniEconomicia",
+                columns: [
+                    { property: "numUniEconomicia", label: "vhdNumUniEcon", width: "12rem" },
+                    { property: "soc", label: "vhdSocieta", width: "7rem" },
+                    { property: "numOgg", label: "vhdNumOgg", width: "16rem" },
+                    { property: "chiaveIntOggImm", label: "vhdChiaveIntOggImm", width: "16rem" }
+                ]
+            });
         },
         onValueHelpTipoOggetto: function () {
             this._loadValueHelp("miFilterTipoOggetto", "lblTipoOggetto", function (fnSuccess, fnError) {
                 return models.fetchTipoOggettoHelp(this.getOwnerComponent().getModel(), fnSuccess, fnError);
-            }.bind(this), "tipoOggArc", "defTipoOggArc");
+            }.bind(this), {
+                key: "tipoOggArc",
+                description: "defTipoOggArc",
+                tokenKey: "tipoOggArc",
+                columns: [
+                    { property: "tipoOggArc", label: "vhdTipoOggArc", width: "10rem" },
+                    { property: "defTipoOggArc", label: "vhdDefTipoOggArc", width: "18rem" },
+                    { property: "tipoOggSupGerArc", label: "vhdTipoOggSupGerArc", width: "12rem", flag: true },
+                    { property: "tipoOggArcUniEcom", label: "vhdTipoOggArcUniEcon", width: "10rem", flag: true },
+                    { property: "tipoOggArcTerr", label: "vhdTipoOggArcTerr", width: "8rem", flag: true },
+                    { property: "tipoOggArcEdif", label: "vhdTipoOggArcEdif", width: "8rem", flag: true }
+                ]
+            });
         },
         onValueHelpOggettoArchitettonico: function () {
             this._loadValueHelp("miFilterOggettoArchitettonico", "lblOggettoArchitettonico", function (fnSuccess, fnError) {
-                return models.fetchIdOggettoArcHelp(this.getOwnerComponent().getModel(),
-                    this.byId("miFilterOggettoArchitettonico").getValue().trim(), fnSuccess, fnError);
-            }.bind(this), "idOggArc", "def");
+                return models.fetchIdOggettoArcHelp(this.getOwnerComponent().getModel(), this.byId("miFilterOggettoArchitettonico").getValue().trim(), fnSuccess, fnError);
+            }.bind(this), {
+                key: "idOggArc",
+                description: "def",
+                tokenKey: "idOggArc",
+                columns: [
+                    { property: "idOggArc", label: "vhdIdOggArc", width: "14rem" },
+                    { property: "tpOggArc", label: "vhdTpOggArc", width: "10rem" },
+                    { property: "def", label: "vhdDefOggArc", width: "20rem" },
+                    { property: "funzione", label: "vhdFunzione", width: "8rem" }
+                ]
+            });
         },
-        _loadValueHelp: function (sField, sTitle, fnFetch, sKey, sDescription) {
+        _loadValueHelp: function (sField, sTitle, fnFetch, oConfig) {
             var oViewModel = this.getView().getModel("historyViewModel");
             if (oViewModel.getProperty("/busy")) {
                 return;
@@ -64,71 +102,130 @@ sap.ui.define([
             try {
                 fnFetch(function (oData) {
                     oViewModel.setProperty("/busy", false);
-                    this._openValueHelpDialog(sField, this._i18n(sTitle), (oData.results || []).map(function (oEntry) {
-                        return { key: oEntry[sKey], text: oEntry[sDescription] || oEntry[sKey] };
-                    }));
+                    this._openValueHelpDialog({
+                        field: sField,
+                        title: this._i18n(sTitle),
+                        key: oConfig.key,
+                        descriptionKey: oConfig.description,
+                        tokenKey: oConfig.tokenKey,
+                        entries: oData.results || [],
+                        columns: oConfig.columns
+                    });
                 }.bind(this), fnError);
             } catch (oError) {
                 fnError(oError);
             }
         },
-        _openValueHelpDialog: function (sField, sTitle, aEntries) {
-            this._sCurrentValueHelpField = sField;
-            if (!this._oValueHelpDialog) {
-                this._oValueHelpDialog = new ValueHelpDialog({
-                    supportMultiselect: true,
-                    supportRanges: true,
-                    ok: this.onValueHelpOk.bind(this),
-                    cancel: this.onValueHelpCancel.bind(this)
-                });
-                this.getView().addDependent(this._oValueHelpDialog);
-            }
-            var oTable = new Table({
-                visibleRowCount: 5,
-                columns: [
-                    new Column({
-                        label: new Label({ text: this._i18n("vhdColKey") }),
-                        template: new Text({ text: "{valueHelpData>key}" }),
-                        width: "8rem"
-                    }),
-                    new Column({
-                        label: new Label({ text: this._i18n("vhdColText") }),
-                        template: new Text({ text: "{valueHelpData>text}" }),
-                        width: "20rem"
-                    })
-                ]
+        _openValueHelpDialog: function (oConfig) {
+    var oInput = this.byId(oConfig.field);
+    var aEntries = oConfig.entries || [];
+    this._sCurrentValueHelpField = oConfig.field;
+    this._oCurrentValueHelpConfig = {
+        field: oConfig.field,
+        title: oConfig.title,
+        key: oConfig.key,
+        descriptionKey: oConfig.descriptionKey || "",
+        tokenKey: oConfig.tokenKey || oConfig.key,
+        columns: oConfig.columns,
+        entries: aEntries
+    };
+    if (!this._oValueHelpDialog) {
+        this._oValueHelpDialog = new ValueHelpDialog({
+            supportMultiselect: true,
+            supportRanges: true,
+            supportRangesOnly: false,
+            ok: this.onValueHelpOk.bind(this),
+            cancel: this.onValueHelpCancel.bind(this)
+        });
+        this.getView().addDependent(this._oValueHelpDialog);
+    }
+    if (!this._oValueHelpSearchField) {
+        this._oValueHelpSearchField = new sap.m.Input({
+            width: "100%",
+            placeholder: this._i18n("vhdSearchPlaceholder"),
+            change: this.onValueHelpSearch.bind(this)
+        });
+    }
+    this._oValueHelpDialog.setFilterBar(new sap.ui.comp.filterbar.FilterBar({
+        advancedMode: true,
+        filterBarExpanded: true,
+        useToolbar: false,
+        showGoOnFB: false,
+        showFilterConfiguration: false,
+        filterItems: [
+            new sap.ui.comp.filterbar.FilterItem({
+                name: "globalSearch",
+                label: this._i18n("vhdSearch"),
+                control: this._oValueHelpSearchField
+            })
+        ]
+    }));
+    this._oValueHelpSearchField.setValue("");
+    var oTable = new Table({
+        visibleRowCount: 5,
+        columns: oConfig.columns.map(function (oColumn) {
+            return new Column({
+                label: new Label({ text: this._i18n(oColumn.label) }),
+                template: oColumn.flag ? new sap.m.CheckBox({
+                    selected: "{= ${valueHelpData>" + oColumn.property + "} === 'X' }",
+                    editable: false
+                }) : new Text({
+                    text: "{valueHelpData>" + oColumn.property + "}"
+                }),
+                hAlign: oColumn.flag ? "Center" : "Begin",
+                width: oColumn.width
             });
-            oTable.bindRows("valueHelpData>/entries");
-            this._oValueHelpDialog.setTable(oTable);
-            if (this._oValueHelpTable) {
-                this._oValueHelpTable.destroy();
-            }
-            this._oValueHelpTable = oTable;
-            var oValueHelpDataModel = new JSONModel({
-                entries: aEntries
-            });
-            oValueHelpDataModel.setSizeLimit(Math.max(100, aEntries.length));
-            this._oValueHelpDialog.setModel(oValueHelpDataModel, "valueHelpData");
-            var oInput = this.byId(this._sCurrentValueHelpField);
-            this._oValueHelpDialog.setKey("key");
-            this._oValueHelpDialog.setDescriptionKey("text");
-            this._oValueHelpDialog.setTokens(oInput.getTokens().map(function (oToken) {
-                return oToken.clone();
-            }));
-            this._oValueHelpDialog.setRangeKeyFields([
-                { label: this._i18n("vhdColKey"), key: "key", type: "string" }
-            ]);
-            this._oValueHelpDialog.setTitle(sTitle);
-            this._oValueHelpDialog.update();
-            this._oValueHelpDialog.open();
-        },
+        }, this)
+    });
+    oTable.bindRows("valueHelpData>/entries");
+    this._oValueHelpDialog.setTable(oTable);
+    if (this._oValueHelpTable) {
+        this._oValueHelpTable.destroy();
+    }
+    this._oValueHelpTable = oTable;
+    var oValueHelpDataModel = new JSONModel({
+        entries: aEntries
+    });
+    oValueHelpDataModel.setSizeLimit(Math.max(100, aEntries.length));
+    this._oValueHelpDialog.setModel(oValueHelpDataModel, "valueHelpData");
+    this._oValueHelpDialog.setKey(oConfig.key);
+    this._oValueHelpDialog.setDescriptionKey(oConfig.descriptionKey || "");
+    this._oValueHelpDialog.setTokens(oInput.getTokens().map(function (oToken) {
+        return oToken.clone();
+    }));
+    this._oValueHelpDialog.setRangeKeyFields([
+        { label: oConfig.title, key: oConfig.key, type: "string" }
+    ]);
+    this._oValueHelpDialog.setTitle(oConfig.title);
+    this._oValueHelpDialog.update();
+    this._oValueHelpDialog.open();
+},
+        onValueHelpSearch: function (oEvent) {
+    var sQuery = oEvent.getSource().getValue();
+    var aFilteredEntries = models.filterValueHelpEntries(this._oCurrentValueHelpConfig.entries, sQuery);
+    var oValueHelpDataModel = new JSONModel({
+        entries: aFilteredEntries
+    });
+    oValueHelpDataModel.setSizeLimit(Math.max(100, aFilteredEntries.length));
+    this._oValueHelpDialog.setModel(oValueHelpDataModel, "valueHelpData");
+    this._oValueHelpDialog.update();
+},
         onValueHelpOk: function (oEvent) {
-            var aTokens = oEvent.getParameter("tokens") || [];
-            var oInput = this.byId(this._sCurrentValueHelpField);
-            oInput.setTokens(aTokens);
-            oInput.setValue("");
-            this._oValueHelpDialog.close();
-        },
+    var aTokens = oEvent.getParameter("tokens") || [];
+    var sTokenKey = this._oCurrentValueHelpConfig && this._oCurrentValueHelpConfig.tokenKey;
+    aTokens.forEach(function (oToken) {
+        if (!oToken.data("range")) {
+            oToken.setText(oToken.getKey());
+            if (sTokenKey) {
+                oToken.setTooltip(oToken.getKey());
+            }
+        }
+    });
+    var oInput = this.byId(this._sCurrentValueHelpField);
+    oInput.setTokens(aTokens);
+    oInput.setValue("");
+    this._oValueHelpDialog.close();
+},
         onValueHelpCancel: function () {
             this._oValueHelpDialog.close();
         },

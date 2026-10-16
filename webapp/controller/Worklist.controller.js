@@ -4,8 +4,17 @@ sap.ui.define([
     "../model/models",
     "sap/ui/export/Spreadsheet",
     "sap/ui/export/library",
-    "sap/m/MessageBox"
-], function (Controller, JSONModel, models, Spreadsheet, exportLibrary, MessageBox) {
+    "sap/m/MessageBox",
+    "sap/ui/comp/valuehelpdialog/ValueHelpDialog",
+    "sap/ui/table/Table",
+    "sap/ui/table/Column",
+    "sap/m/Label",
+    "sap/m/Text",
+    "sap/m/CheckBox",
+    "sap/m/Input",
+    "sap/ui/comp/filterbar/FilterBar",
+    "sap/ui/comp/filterbar/FilterItem"
+], function (Controller, JSONModel, models, Spreadsheet, exportLibrary, MessageBox, ValueHelpDialog, Table, Column, Label, Text, CheckBox, Input, FilterBar, FilterItem) {
     "use strict";
     return Controller.extend("reportamministrazionetrasparenza.controller.Worklist", {
         Spreadsheet: Spreadsheet,
@@ -23,6 +32,11 @@ sap.ui.define([
         },
         onValueHelpUnitaEconomica: function () {
             var sSocieta = this.getView().getModel("viewModel").getProperty("/filterSociety");
+            var fnError = function (oError) {
+                this.getView().setBusy(false);
+                var sDetails = oError && (oError.statusCode || oError.statusText || oError.message || "");
+                MessageBox.error(this._i18n("msgValueHelpLoadError") + (sDetails ? " (" + sDetails + ")" : ""));
+            }.bind(this);
             this.getView().setBusy(true);
             models.fetchIdUniEconomicaHelp(this.getOwnerComponent().getModel(), sSocieta, function (oData) {
                 this.getView().setBusy(false);
@@ -31,6 +45,7 @@ sap.ui.define([
                     title: this._i18n("lblUnitaEconomica"),
                     key: "numUniEconomicia",
                     descriptionKey: "numOgg",
+                    tokenKey: "numUniEconomicia",
                     entries: oData.results || [],
                     columns: [
                         { property: "numUniEconomicia", label: "vhdNumUniEcon", width: "12rem" },
@@ -39,9 +54,14 @@ sap.ui.define([
                         { property: "chiaveIntOggImm", label: "vhdChiaveIntOggImm", width: "16rem" }
                     ]
                 });
-            }.bind(this), this._onValueHelpError.bind(this));
+            }.bind(this), fnError);
         },
         onValueHelpTipoOggetto: function () {
+            var fnError = function (oError) {
+                this.getView().setBusy(false);
+                var sDetails = oError && (oError.statusCode || oError.statusText || oError.message || "");
+                MessageBox.error(this._i18n("msgValueHelpLoadError") + (sDetails ? " (" + sDetails + ")" : ""));
+            }.bind(this);
             this.getView().setBusy(true);
             models.fetchTipoOggettoHelp(this.getOwnerComponent().getModel(), function (oData) {
                 this.getView().setBusy(false);
@@ -50,6 +70,7 @@ sap.ui.define([
                     title: this._i18n("lblTipoOggetto"),
                     key: "tipoOggArc",
                     descriptionKey: "defTipoOggArc",
+                    tokenKey: "tipoOggArc",
                     entries: oData.results || [],
                     columns: [
                         { property: "tipoOggArc", label: "vhdTipoOggArc", width: "10rem" },
@@ -60,10 +81,15 @@ sap.ui.define([
                         { property: "tipoOggArcEdif", label: "vhdTipoOggArcEdif", width: "8rem", flag: true }
                     ]
                 });
-            }.bind(this), this._onValueHelpError.bind(this));
+            }.bind(this), fnError);
         },
         onValueHelpOggettoArchitettonico: function () {
             var sIdOggetto = this.byId("miFilterOggettoArchitettonico").getValue().trim();
+            var fnError = function (oError) {
+                this.getView().setBusy(false);
+                var sDetails = oError && (oError.statusCode || oError.statusText || oError.message || "");
+                MessageBox.error(this._i18n("msgValueHelpLoadError") + (sDetails ? " (" + sDetails + ")" : ""));
+            }.bind(this);
             this.getView().setBusy(true);
             models.fetchIdOggettoArcHelp(this.getOwnerComponent().getModel(), sIdOggetto, function (oData) {
                 this.getView().setBusy(false);
@@ -72,6 +98,7 @@ sap.ui.define([
                     title: this._i18n("lblOggettoArchitettonico"),
                     key: "idOggArc",
                     descriptionKey: "def",
+                    tokenKey: "idOggArc",
                     entries: oData.results || [],
                     columns: [
                         { property: "idOggArc", label: "vhdIdOggArc", width: "14rem" },
@@ -80,31 +107,79 @@ sap.ui.define([
                         { property: "funzione", label: "vhdFunzione", width: "8rem" }
                     ]
                 });
-            }.bind(this), this._onValueHelpError.bind(this));
+            }.bind(this), fnError);
         },
         _openValueHelpDialog: function (oConfig) {
+            var oInput = this.byId(oConfig.field);
+            var aEntries = oConfig.entries || [];
+            var that = this;
+            this._sCurrentValueHelpField = oConfig.field;
+            this._oCurrentValueHelpConfig = {
+                field: oConfig.field,
+                title: oConfig.title,
+                key: oConfig.key,
+                descriptionKey: oConfig.descriptionKey || "",
+                tokenKey: oConfig.tokenKey || oConfig.key,
+                columns: oConfig.columns,
+                entries: aEntries
+            };
             if (!this._oValueHelpDialog) {
-                this._oValueHelpDialog = sap.ui.xmlfragment(
-                    this.getView().getId(),
-                    "reportamministrazionetrasparenza.view.fragment.ValueHelpDialog",
-                    this
-                );
+                this._oValueHelpDialog = new ValueHelpDialog({
+                    supportMultiselect: true,
+                    supportRanges: true,
+                    supportRangesOnly: false,
+                    ok: this.onValueHelpOk.bind(this),
+                    cancel: this.onValueHelpCancel.bind(this)
+                });
                 this.getView().addDependent(this._oValueHelpDialog);
             }
-            this._sCurrentValueHelpField = oConfig.field;
-            var oTable = new sap.ui.table.Table({
+            if (!this._oValueHelpSearchField) {
+                this._oValueHelpSearchField = new Input({
+                    width: "100%",
+                    placeholder: this._i18n("vhdSearchPlaceholder"),
+                    change: function (oEvent) {
+                        var sQuery = oEvent.getSource().getValue();
+                        var aFilteredEntries = models.filterValueHelpEntries(that._oCurrentValueHelpConfig.entries, sQuery);
+                        var oValueHelpDataModel = new JSONModel({
+                            entries: aFilteredEntries
+                        });
+                        oValueHelpDataModel.setSizeLimit(Math.max(100, aFilteredEntries.length));
+                        that._oValueHelpDialog.setModel(oValueHelpDataModel, "valueHelpData");
+                        that._oValueHelpDialog.update();
+                    }
+                });
+            }
+            this._oValueHelpDialog.setFilterBar(new FilterBar({
+                advancedMode: true,
+                filterBarExpanded: true,
+                useToolbar: false,
+                showGoOnFB: false,
+                showFilterConfiguration: false,
+                filterItems: [
+                    new FilterItem({
+                        name: "globalSearch",
+                        label: this._i18n("vhdSearch"),
+                        control: this._oValueHelpSearchField
+                    })
+                ]
+            }));
+            this._oValueHelpSearchField.setValue("");
+            var oTable = new Table({
                 visibleRowCount: 8,
                 columns: oConfig.columns.map(function (oColumn) {
-                    return new sap.ui.table.Column({
-                        label: new sap.m.Label({ text: this._i18n(oColumn.label) }),
-                        template: oColumn.flag ? new sap.m.CheckBox({
+                    return new Column({
+                        label: new Label({ text: that._i18n(oColumn.label) }),
+                        template: oColumn.flag ? new CheckBox({
                             selected: "{= ${valueHelpData>" + oColumn.property + "} === 'X' }",
                             editable: false
-                        }) : new sap.m.Text({ text: "{valueHelpData>" + oColumn.property + "}", wrapping: false }),
+                        }) : new Text({
+                            text: "{valueHelpData>" + oColumn.property + "}",
+                            wrapping: false
+                        }),
                         hAlign: oColumn.flag ? "Center" : "Begin",
                         width: oColumn.width
                     });
-                }, this)
+                })
             });
             oTable.bindRows("valueHelpData>/entries");
             this._oValueHelpDialog.setTable(oTable);
@@ -113,11 +188,10 @@ sap.ui.define([
             }
             this._oValueHelpTable = oTable;
             var oValueHelpDataModel = new JSONModel({
-                entries: oConfig.entries
+                entries: aEntries
             });
-            oValueHelpDataModel.setSizeLimit(Math.max(100, oConfig.entries.length));
+            oValueHelpDataModel.setSizeLimit(Math.max(100, aEntries.length));
             this._oValueHelpDialog.setModel(oValueHelpDataModel, "valueHelpData");
-            var oInput = this.byId(oConfig.field);
             this._oValueHelpDialog.setKey(oConfig.key);
             this._oValueHelpDialog.setDescriptionKey(oConfig.descriptionKey || "");
             this._oValueHelpDialog.setTokens(oInput.getTokens().map(function (oToken) {
@@ -130,20 +204,28 @@ sap.ui.define([
             this._oValueHelpDialog.update();
             this._oValueHelpDialog.open();
         },
+        onValueHelpSearch: function (oEvent) {
+            var sQuery = oEvent.getSource().getValue();
+            var aFilteredEntries = models.filterValueHelpEntries(this._oCurrentValueHelpConfig.entries, sQuery);
+            var oValueHelpDataModel = new JSONModel({
+                entries: aFilteredEntries
+            });
+            oValueHelpDataModel.setSizeLimit(Math.max(100, aFilteredEntries.length));
+            this._oValueHelpDialog.setModel(oValueHelpDataModel, "valueHelpData");
+            this._oValueHelpDialog.update();
+        },
         onValueHelpOk: function (oEvent) {
             var aTokens = oEvent.getParameter("tokens") || [];
+            aTokens.forEach(function (oToken) {
+                if (!oToken.data("range")) {
+                    oToken.setText(oToken.getKey());
+                    oToken.setTooltip(oToken.getKey());
+                }
+            });
             var oInput = this.byId(this._sCurrentValueHelpField);
             oInput.setTokens(aTokens);
             oInput.setValue("");
             this._oValueHelpDialog.close();
-        },
-        onValueHelpCancel: function () {
-            this._oValueHelpDialog.close();
-        },
-        _onValueHelpError: function (oError) {
-            this.getView().setBusy(false);
-            var sDetails = oError && (oError.statusCode || oError.statusText || "");
-            MessageBox.error(this._i18n("msgValueHelpLoadError") + (sDetails ? " (" + sDetails + ")" : ""));
         },
         _getReportSelections: function (sControlId) {
             var oInput = this.byId(sControlId);

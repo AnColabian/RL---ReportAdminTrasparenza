@@ -356,5 +356,47 @@ sap.ui.define([
                 });
             }).then(fnSuccess).catch(fnError);
         },
+        filterValueHelpTable: function (oTable, sValue) {
+            var oBinding = oTable && oTable.getBinding("rows");
+            if (!oBinding) {
+                return;
+            }
+            var sQuery = String(sValue || "").trim().toLocaleUpperCase();
+            if (!sQuery) {
+                oBinding.filter([], "Application");
+                return;
+            }
+            var aEntries = oTable.getModel("valueHelpData").getProperty("/entries") || [];
+            var aProperties = [];
+            aEntries.forEach(function (oEntry) {
+                Object.keys(oEntry).forEach(function (sProperty) {
+                    var vValue = oEntry[sProperty];
+                    if ((typeof vValue === "string" || typeof vValue === "number") && aProperties.indexOf(sProperty) === -1) {
+                        aProperties.push(sProperty);
+                    }
+                });
+            });
+            var aFilters = aProperties.map(function (sProperty) {
+                return new Filter({
+                    path: sProperty,
+                    test: function (vValue) {
+                        return vValue !== null && vValue !== undefined && String(vValue).toLocaleUpperCase().indexOf(sQuery) !== -1;
+                    }
+                });
+            });
+            oBinding.filter(aFilters.length ? [new Filter({ filters: aFilters, and: false })] : [], "Application");
+        },
+        filterValueHelpEntries: function (aEntries, sQuery) {
+            var sNormalizedQuery = String(sQuery || "").trim().toLocaleUpperCase();
+            if (!sNormalizedQuery) {
+                return aEntries || [];
+            }
+            return (aEntries || []).filter(function (oEntry) {
+                return Object.keys(oEntry || {}).some(function (sProperty) {
+                    var vValue = oEntry[sProperty];
+                    return (typeof vValue === "string" || typeof vValue === "number") && String(vValue).toLocaleUpperCase().indexOf(sNormalizedQuery) !== -1;
+                });
+            });
+        },
     };
 });

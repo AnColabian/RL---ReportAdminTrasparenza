@@ -1,3 +1,15 @@
-<core:FragmentDefinition xmlns:core="sap.ui.core" xmlns:vhd="sap.ui.comp.valuehelpdialog">
-    <vhd:ValueHelpDialog id="valueHelpDialog" supportMultiselect="true" supportRanges="true" supportRangesOnly="false" ok=".onValueHelpOk" cancel=".onValueHelpCancel" />
+<core:FragmentDefinition xmlns="sap.m" xmlns:core="sap.ui.core" xmlns:vhd="sap.ui.comp.valuehelpdialog" xmlns:fb="sap.ui.comp.filterbar">
+    <vhd:ValueHelpDialog id="valueHelpDialog" supportMultiselect="true" supportRanges="true" supportRangesOnly="false" tokenDisplayBehaviour="idOnly" ok=".onValueHelpOk" cancel=".onValueHelpCancel">
+        <vhd:filterBar>
+            <fb:FilterBar advancedMode="true" filterBarExpanded="true" useToolbar="false" showGoOnFB="false" showFilterConfiguration="false">
+                <fb:filterItems>
+                    <fb:FilterItem name="globalSearch" label="{i18n>vhdSearch}" visibleInFilterBar="true">
+                        <fb:control>
+                            <Input id="valueHelpSearch" width="100%" placeholder="{i18n>vhdSearchPlaceholder}" valueLiveUpdate="false" change=".onValueHelpSearch" />
+                        </fb:control>
+                    </fb:FilterItem>
+                </fb:filterItems>
+            </fb:FilterBar>
+        </vhd:filterBar>
+    </vhd:ValueHelpDialog>
 </core:FragmentDefinition>
