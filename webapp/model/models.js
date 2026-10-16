@@ -183,16 +183,22 @@ sap.ui.define([
                 }
                 return sDate;
             };
-            if (oSelection.dateFrom) {
-                aFilters.push(new Filter("dtStorico", FilterOperator.GE, fnDateValue(oSelection.dateFrom)));
-            }
-            if (oSelection.dateTo) {
+            if (oSelection.dateFrom && oSelection.dateTo) {
+                var vDateFrom = fnDateValue(oSelection.dateFrom);
                 var vDateTo = fnDateValue(oSelection.dateTo);
                 if (vDateTo instanceof Date) {
                     vDateTo.setUTCDate(vDateTo.getUTCDate() + 1);
-                    aFilters.push(new Filter("dtStorico", FilterOperator.LT, vDateTo));
+                }
+                aFilters.push(new Filter("dtStorico", FilterOperator.BT, vDateFrom, vDateTo));
+            } else if (oSelection.dateFrom) {
+                aFilters.push(new Filter("dtStorico", FilterOperator.GE, fnDateValue(oSelection.dateFrom)));
+            } else if (oSelection.dateTo) {
+                var vSingleDateTo = fnDateValue(oSelection.dateTo);
+                if (vSingleDateTo instanceof Date) {
+                    vSingleDateTo.setUTCDate(vSingleDateTo.getUTCDate() + 1);
+                    aFilters.push(new Filter("dtStorico", FilterOperator.LT, vSingleDateTo));
                 } else {
-                    aFilters.push(new Filter("dtStorico", FilterOperator.LE, vDateTo));
+                    aFilters.push(new Filter("dtStorico", FilterOperator.LE, vSingleDateTo));
                 }
             }
             [

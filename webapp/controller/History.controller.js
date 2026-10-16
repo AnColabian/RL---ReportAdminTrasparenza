@@ -117,126 +117,130 @@ sap.ui.define([
             }
         },
         _openValueHelpDialog: function (oConfig) {
-    var oInput = this.byId(oConfig.field);
-    var aEntries = oConfig.entries || [];
-    this._sCurrentValueHelpField = oConfig.field;
-    this._oCurrentValueHelpConfig = {
-        field: oConfig.field,
-        title: oConfig.title,
-        key: oConfig.key,
-        descriptionKey: oConfig.descriptionKey || "",
-        tokenKey: oConfig.tokenKey || oConfig.key,
-        columns: oConfig.columns,
-        entries: aEntries
-    };
-    if (!this._oValueHelpDialog) {
-        this._oValueHelpDialog = new ValueHelpDialog({
-            supportMultiselect: true,
-            supportRanges: true,
-            supportRangesOnly: false,
-            ok: this.onValueHelpOk.bind(this),
-            cancel: this.onValueHelpCancel.bind(this)
-        });
-        this.getView().addDependent(this._oValueHelpDialog);
-    }
-    if (!this._oValueHelpSearchField) {
-        this._oValueHelpSearchField = new sap.m.Input({
-            width: "100%",
-            placeholder: this._i18n("vhdSearchPlaceholder"),
-            change: this.onValueHelpSearch.bind(this)
-        });
-    }
-    this._oValueHelpDialog.setFilterBar(new sap.ui.comp.filterbar.FilterBar({
-        advancedMode: true,
-        filterBarExpanded: true,
-        useToolbar: false,
-        showGoOnFB: false,
-        showFilterConfiguration: false,
-        filterItems: [
-            new sap.ui.comp.filterbar.FilterItem({
-                name: "globalSearch",
-                label: this._i18n("vhdSearch"),
-                control: this._oValueHelpSearchField
-            })
-        ]
-    }));
-    this._oValueHelpSearchField.setValue("");
-    var oTable = new Table({
-        visibleRowCount: 5,
-        columns: oConfig.columns.map(function (oColumn) {
-            return new Column({
-                label: new Label({ text: this._i18n(oColumn.label) }),
-                template: oColumn.flag ? new sap.m.CheckBox({
-                    selected: "{= ${valueHelpData>" + oColumn.property + "} === 'X' }",
-                    editable: false
-                }) : new Text({
-                    text: "{valueHelpData>" + oColumn.property + "}"
-                }),
-                hAlign: oColumn.flag ? "Center" : "Begin",
-                width: oColumn.width
-            });
-        }, this)
-    });
-    oTable.bindRows("valueHelpData>/entries");
-    this._oValueHelpDialog.setTable(oTable);
-    if (this._oValueHelpTable) {
-        this._oValueHelpTable.destroy();
-    }
-    this._oValueHelpTable = oTable;
-    var oValueHelpDataModel = new JSONModel({
-        entries: aEntries
-    });
-    oValueHelpDataModel.setSizeLimit(Math.max(100, aEntries.length));
-    this._oValueHelpDialog.setModel(oValueHelpDataModel, "valueHelpData");
-    this._oValueHelpDialog.setKey(oConfig.key);
-    this._oValueHelpDialog.setDescriptionKey(oConfig.descriptionKey || "");
-    this._oValueHelpDialog.setTokens(oInput.getTokens().map(function (oToken) {
-        return oToken.clone();
-    }));
-    this._oValueHelpDialog.setRangeKeyFields([
-        { label: oConfig.title, key: oConfig.key, type: "string" }
-    ]);
-    this._oValueHelpDialog.setTitle(oConfig.title);
-    this._oValueHelpDialog.update();
-    this._oValueHelpDialog.open();
-},
-        onValueHelpSearch: function (oEvent) {
-    var sQuery = oEvent.getSource().getValue();
-    var aFilteredEntries = models.filterValueHelpEntries(this._oCurrentValueHelpConfig.entries, sQuery);
-    var oValueHelpDataModel = new JSONModel({
-        entries: aFilteredEntries
-    });
-    oValueHelpDataModel.setSizeLimit(Math.max(100, aFilteredEntries.length));
-    this._oValueHelpDialog.setModel(oValueHelpDataModel, "valueHelpData");
-    this._oValueHelpDialog.update();
-},
-        onValueHelpOk: function (oEvent) {
-    var aTokens = oEvent.getParameter("tokens") || [];
-    var sTokenKey = this._oCurrentValueHelpConfig && this._oCurrentValueHelpConfig.tokenKey;
-    aTokens.forEach(function (oToken) {
-        if (!oToken.data("range")) {
-            oToken.setText(oToken.getKey());
-            if (sTokenKey) {
-                oToken.setTooltip(oToken.getKey());
+            var oInput = this.byId(oConfig.field);
+            var aEntries = oConfig.entries || [];
+            this._sCurrentValueHelpField = oConfig.field;
+            this._oCurrentValueHelpConfig = {
+                field: oConfig.field,
+                title: oConfig.title,
+                key: oConfig.key,
+                descriptionKey: oConfig.descriptionKey || "",
+                tokenKey: oConfig.tokenKey || oConfig.key,
+                columns: oConfig.columns,
+                entries: aEntries
+            };
+            if (!this._oValueHelpDialog) {
+                this._oValueHelpDialog = new ValueHelpDialog({
+                    supportMultiselect: true,
+                    supportRanges: true,
+                    supportRangesOnly: false,
+                    ok: this.onValueHelpOk.bind(this),
+                    cancel: this.onValueHelpCancel.bind(this)
+                });
+                this.getView().addDependent(this._oValueHelpDialog);
             }
-        }
-    });
-    var oInput = this.byId(this._sCurrentValueHelpField);
-    oInput.setTokens(aTokens);
-    oInput.setValue("");
-    this._oValueHelpDialog.close();
-},
+            if (!this._oValueHelpSearchField) {
+                this._oValueHelpSearchField = new sap.m.Input({
+                    width: "100%",
+                    placeholder: this._i18n("vhdSearchPlaceholder"),
+                    change: this.onValueHelpSearch.bind(this)
+                });
+            }
+            this._oValueHelpDialog.setFilterBar(new sap.ui.comp.filterbar.FilterBar({
+                advancedMode: true,
+                filterBarExpanded: true,
+                useToolbar: false,
+                showGoOnFB: false,
+                showFilterConfiguration: false,
+                filterItems: [
+                    new sap.ui.comp.filterbar.FilterItem({
+                        name: "globalSearch",
+                        label: this._i18n("vhdSearch"),
+                        control: this._oValueHelpSearchField
+                    })
+                ]
+            }));
+            this._oValueHelpSearchField.setValue("");
+            var oTable = new Table({
+                visibleRowCount: 5,
+                columns: oConfig.columns.map(function (oColumn) {
+                    return new Column({
+                        label: new Label({ text: this._i18n(oColumn.label) }),
+                        template: oColumn.flag ? new sap.m.CheckBox({
+                            selected: "{= ${valueHelpData>" + oColumn.property + "} === 'X' }",
+                            editable: false
+                        }) : new Text({
+                            text: "{valueHelpData>" + oColumn.property + "}"
+                        }),
+                        hAlign: oColumn.flag ? "Center" : "Begin",
+                        width: oColumn.width
+                    });
+                }, this)
+            });
+            oTable.bindRows("valueHelpData>/entries");
+            this._oValueHelpDialog.setTable(oTable);
+            if (this._oValueHelpTable) {
+                this._oValueHelpTable.destroy();
+            }
+            this._oValueHelpTable = oTable;
+            var oValueHelpDataModel = new JSONModel({
+                entries: aEntries
+            });
+            oValueHelpDataModel.setSizeLimit(Math.max(100, aEntries.length));
+            this._oValueHelpDialog.setModel(oValueHelpDataModel, "valueHelpData");
+            this._oValueHelpDialog.setKey(oConfig.key);
+            this._oValueHelpDialog.setDescriptionKey(oConfig.descriptionKey || "");
+            this._oValueHelpDialog.setTokens(oInput.getTokens().map(function (oToken) {
+                return oToken.clone();
+            }));
+            this._oValueHelpDialog.setRangeKeyFields([
+                { label: oConfig.title, key: oConfig.key, type: "string" }
+            ]);
+            this._oValueHelpDialog.setTitle(oConfig.title);
+            this._oValueHelpDialog.update();
+            this._oValueHelpDialog.open();
+        },
+        onValueHelpSearch: function (oEvent) {
+            var sQuery = oEvent.getSource().getValue();
+            var aFilteredEntries = models.filterValueHelpEntries(this._oCurrentValueHelpConfig.entries, sQuery);
+            var oValueHelpDataModel = new JSONModel({
+                entries: aFilteredEntries
+            });
+            oValueHelpDataModel.setSizeLimit(Math.max(100, aFilteredEntries.length));
+            this._oValueHelpDialog.setModel(oValueHelpDataModel, "valueHelpData");
+            this._oValueHelpDialog.update();
+        },
+        onValueHelpOk: function (oEvent) {
+            var aTokens = oEvent.getParameter("tokens") || [];
+            var sTokenKey = this._oCurrentValueHelpConfig && this._oCurrentValueHelpConfig.tokenKey;
+            aTokens.forEach(function (oToken) {
+                if (!oToken.data("range")) {
+                    oToken.setText(oToken.getKey());
+                    if (sTokenKey) {
+                        oToken.setTooltip(oToken.getKey());
+                    }
+                }
+            });
+            var oInput = this.byId(this._sCurrentValueHelpField);
+            oInput.setTokens(aTokens);
+            oInput.setValue("");
+            this._oValueHelpDialog.close();
+        },
         onValueHelpCancel: function () {
             this._oValueHelpDialog.close();
         },
         _getHistorySelections: function (sId) {
             var oInput = this.byId(sId);
+            if (!oInput) {
+                return [];
+            }
             var aSelections = oInput.getTokens().map(function (oToken) {
                 var oRange = oToken.data("range");
                 return oRange || { operation: "EQ", value1: oToken.getKey() || oToken.getText(), exclude: false };
             });
-            if (oInput.getValue().trim()) {
-                aSelections.push({ operation: "EQ", value1: oInput.getValue().trim(), exclude: false });
+            var sValue = oInput.getValue().trim();
+            if (sValue) {
+                aSelections.push({ operation: "EQ", value1: sValue, exclude: false });
             }
             return aSelections;
         },
