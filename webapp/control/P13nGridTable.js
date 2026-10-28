@@ -5,7 +5,7 @@ sap.ui.define([
     "sap/m/p13n/SelectionController"
 ], function (Table, Engine, MetadataHelper, SelectionController) {
     "use strict";
-    return Table.extend("reportamministrazionetrasparenza.control.P13nGridTable", {
+    return Table.extend("reportmef.control.P13nGridTable", {
         metadata: {
             properties: {
                 p13nTitle: { type: "string", defaultValue: "" },
@@ -16,6 +16,9 @@ sap.ui.define([
         onBeforeRendering: function () {
             if (Table.prototype.onBeforeRendering) {
                 Table.prototype.onBeforeRendering.apply(this, arguments);
+            }
+            if (!this.getColumns().length) {
+                return;
             }
             this._initP13n();
             this._restoreColumnsState();
@@ -112,7 +115,7 @@ sap.ui.define([
             if (!sPersistencyKey) {
                 return "";
             }
-            return "reportamministrazionetrasparenza.p13n.columns." + sPersistencyKey;
+            return "reportmef.p13n.columns." + sPersistencyKey;
         },
         _persistColumnsState: function (aColumnsState) {
             var sStorageKey = this._getStorageKey();

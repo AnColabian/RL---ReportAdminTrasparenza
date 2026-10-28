@@ -3,10 +3,25 @@ sap.ui.define([
     "sap/ui/Device",
     "sap/ui/model/Filter",
     "sap/ui/model/FilterOperator",
-    "sap/ui/thirdparty/jquery"
-], function (JSONModel, Device, Filter, FilterOperator, jQuery) {
+    "sap/ui/thirdparty/jquery",
+    "sap/ui/core/format/DateFormat"
+], function (JSONModel, Device, Filter, FilterOperator, jQuery, DateFormat) {
     "use strict";
+    var ENTITY_SET = "strfMef";
+    var BATCH_ENTITY_SET = "strfMefBatch";
+    var DEFAULT_BATCH_NAVIGATION = "toRighe";
+    // Nomi candidati dei campi filtro su strfMef: viene usato il primo presente nel metadata.
+    var FILTER_FIELDS = {
+        utente: ["utente", "uname", "user"],
+        unitaEconomica: ["uniEcon", "numUniEconomicia", "uniEconomica", "idUniEcon"],
+        tipoOggetto: ["tipoOggArc", "tpOggArc"],
+        oggettoArchitettonico: ["idOggArc", "oggArc"]
+    };
+    var oDateFormat = DateFormat.getDateInstance({ pattern: "dd.MM.yyyy", UTC: true });
+    var oDateTimeFormat = DateFormat.getDateTimeInstance({ pattern: "dd.MM.yyyy HH:mm:ss", UTC: true });
     return {
+        ENTITY_SET: ENTITY_SET,
+        BATCH_ENTITY_SET: BATCH_ENTITY_SET,
         
         createDeviceModel: function () {
             var oModel = new JSONModel(Device);
@@ -46,26 +61,63 @@ sap.ui.define([
             });
             return oModel;
         },
-        fetchReportData: function (oODataModel, oSelection, fnSuccess, fnError) {
-            var aFilters = [
-                new Filter("soc", FilterOperator.EQ, oSelection.societa)
-            ];
-            var aFields = [
-                { path: "uniEcon", selections: oSelection.unitaEconomica },
-                { path: "tipoOggArc", selections: oSelection.tipoOggetto },
-                { path: "idOggArc", selections: oSelection.oggettoArchitettonico }
-            ];
-            aFields.forEach(function (oField) {
-                var oFilter = this._createReportFieldFilter(oField.path, oField.selections);
+        _whenMetadataReady: function (oODataModel) {
+            return Promise.resolve().then(function () {
+                return oODataModel.metadataLoaded(true);
+            }).then(function () {
+                return oODataModel.getMetaModel().loaded();
+            });
+        },
+        getEntityType: function (oODataModel, sEntitySet) {
+            var oMetaModel = oODataModel && oODataModel.getMetaModel && oODataModel.getMetaModel();
+            var oEntitySet = oMetaModel && oMetaModel.getODataEntitySet(sEntitySet || ENTITY_SET);
+            return oEntitySet ? oMetaModel.getODataEntityType(oEntitySet.entityType) : null;
+        },
+        resolvePropertyName: function (oEntityType, aCandidates) {
+            var aProperties = oEntityType && Array.isArray(oEntityType.property) ? oEntityType.property : null;
+            if (!aProperties) {
+                return aCandidates[0];
+            }
+            var aNames = aProperties.map(function (oProperty) { return oProperty.name; });
+            var sMatch = aCandidates.find(function (sName) { return aNames.indexOf(sName) !== -1; });
+            if (sMatch) {
+                return sMatch;
+            }
+            var aLower = aNames.map(function (sName) { return sName.toLowerCase(); });
+            var iIndex = -1;
+            aCandidates.some(function (sName) {
+                iIndex = aLower.indexOf(sName.toLowerCase());
+                return iIndex !== -1;
+            });
+            return iIndex !== -1 ? aNames[iIndex] : null;
+        },
+        _pushFieldFilters: function (aFilters, oEntityType, oSelection, aKeys) {
+            aKeys.forEach(function (sKey) {
+                var aSelections = oSelection[sKey] || [];
+                if (!aSelections.length) {
+                    return;
+                }
+                var sPath = this.resolvePropertyName(oEntityType, FILTER_FIELDS[sKey]);
+                if (!sPath) {
+                    throw new Error("Il campo filtro '" + sKey + "' non esiste in " + ENTITY_SET + ".");
+                }
+                var oFilter = this._createReportFieldFilter(sPath, aSelections);
                 if (oFilter) {
                     aFilters.push(oFilter);
                 }
             }, this);
-            return oODataModel.read("/amministrTrasp", {
-                filters: [new Filter({ filters: aFilters, and: true })],
-                success: fnSuccess,
-                error: fnError
-            });
+        },
+        fetchReportData: function (oODataModel, oSelection, fnSuccess, fnError) {
+            return this._whenMetadataReady(oODataModel).then(function () {
+                var oEntityType = this.getEntityType(oODataModel);
+                var aFilters = [
+                    new Filter("soc", FilterOperator.EQ, oSelection.societa)
+                ];
+                this._pushFieldFilters(aFilters, oEntityType, oSelection, ["unitaEconomica", "tipoOggetto", "oggettoArchitettonico"]);
+                return this._readHistoryPages(oODataModel, {
+                    filters: [new Filter({ filters: aFilters, and: true })]
+                }, fnSuccess, fnError);
+            }.bind(this)).catch(fnError);
         },
         _createReportFieldFilter: function (sPath, aSelections) {
             var aIncluded = [];
@@ -104,60 +156,63 @@ sap.ui.define([
             }
             return aFilters.length ? new Filter({ filters: aFilters, and: true }) : null;
         },
+        formatValue: function (vValue) {
+            if (vValue === null || vValue === undefined) {
+                return "";
+            }
+            if (vValue instanceof Date) {
+                var bHasTime = vValue.getUTCHours() || vValue.getUTCMinutes() || vValue.getUTCSeconds();
+                return bHasTime ? oDateTimeFormat.format(vValue) : oDateFormat.format(vValue);
+            }
+            if (typeof vValue === "object" && typeof vValue.ms === "number") {
+                var iSeconds = Math.floor(vValue.ms / 1000);
+                return [Math.floor(iSeconds / 3600), Math.floor(iSeconds % 3600 / 60), iSeconds % 60].map(function (i) {
+                    return String(i).padStart(2, "0");
+                }).join(":");
+            }
+            if (typeof vValue === "object") {
+                return "";
+            }
+            if (typeof vValue === "boolean") {
+                return vValue ? "X" : "";
+            }
+            return vValue;
+        },
         mapReportEntries: function (aEntries) {
-            return aEntries.map(function (oItem) {
+            var that = this;
+            return (aEntries || []).map(function (oItem) {
+                var oRow = {};
+                Object.keys(oItem || {}).forEach(function (sKey) {
+                    if (sKey.indexOf("__") === 0) {
+                        return;
+                    }
+                    var vValue = oItem[sKey];
+                    if (vValue && typeof vValue === "object" && vValue.__deferred) {
+                        return;
+                    }
+                    oRow[sKey] = that.formatValue(vValue);
+                });
+                return oRow;
+            });
+        },
+        getColumnDefinitions: function (oODataModel) {
+            var oEntityType = this.getEntityType(oODataModel);
+            if (!oEntityType || !Array.isArray(oEntityType.property)) {
+                return [];
+            }
+            var mNumeric = { "Edm.Decimal": true, "Edm.Double": true, "Edm.Int16": true, "Edm.Int32": true, "Edm.Int64": true, "Edm.Single": true, "Edm.Byte": true };
+            return oEntityType.property.filter(function (oProperty) {
+                return oProperty["sap:visible"] !== "false";
+            }).map(function (oProperty) {
+                var sLabel = oProperty["sap:label"] || oProperty["sap:heading"] || oProperty["sap:quickinfo"] || oProperty.name;
+                var iMaxLength = parseInt(oProperty.maxLength, 10) || 10;
+                var iWidth = Math.max(6, Math.min(18, Math.ceil(Math.max(sLabel.length * 0.55, Math.min(iMaxLength, 40) * 0.5)) + 2));
                 return {
-                    societa: oItem.soc,
-                    unitaEconomica: oItem.uniEcon,
-                    compendio: oItem.compendio,
-                    descrizTipoComp: oItem.descrComp,
-                    definizioneUE: oItem.defUniEcon,
-                    descrBenePatrimoniale: oItem.descrUniEcom,
-                    descrNaturaGiuridica: oItem.desNatGiur,
-                    descrTitoloUtilizzo: oItem.desTitUtil,
-                    via: oItem.viaBe,
-                    numeroCivico: oItem.numCivicoBe,
-                    cap: oItem.capBe,
-                    localita: oItem.locBe,
-                    regione: oItem.regBe,
-                    chiavePaesiRegioni: oItem.paeseRegBe,
-                    oggettoArchitett: oItem.idOggArc,
-                    tipoOggArchitett: oItem.tipoOggArc,
-                    defOggArch: oItem.defOggArc,
-                    funzione: oItem.funz,
-                    businessPartner: oItem.busPartner,
-                    denominazioneDitta: oItem.denomDitta,
-                    descrTpEdifTerr: oItem.desTpEdTer,
-                    descrBeneCulturale: oItem.descr3,
-                    idCatCatastale: oItem.IdCat,
-                    percentRivalutaz: oItem.percRiv,
-                    coeffRivalutaz: oItem.coeffRiv,
-                    notaAddizionaleImmobile: oItem.desAdd,
-                    stAccatastam: oItem.stAccatast,
-                    tipoCatasto: oItem.tipoCatasto,
-                    denominatore: oItem.denominatore,
-                    tipoParticella: oItem.tipoPart,
-                    codComCatTav: oItem.codComCat,
-                    codiceBelfiore: oItem.codBelf,
-                    foglio: oItem.foglio,
-                    graffatoFoglio: oItem.graffFoglio,
-                    sezioneUrbana: oItem.sezUrb,
-                    sezioneAmministr: oItem.sezAmmin,
-                    particellaCatasto: oItem.part,
-                    sub: oItem.sub,
-                    graffMapSub: oItem.grMapSub,
-                    descrClasse: oItem.descr4,
-                    variazioneDal: oItem.variazDal || "",
-                    variazioneAl: oItem.variazAl || "",
-                    superficieMq: oItem.dim1,
-                    cubaturaMc: oItem.dim2,
-                    rendita: oItem.rendAcq,
-                    dataRivRend: oItem.dataAcqRend || "",
-                    tipoDiCalcolo: oItem.tipoCalc,
-                    valOggArch: oItem.valOggArch,
-                    redditoDominicale: oItem.redDomAcq,
-                    redditoAgrario: oItem.redAgrAcq,
-                    note: oItem.note
+                    key: oProperty.name,
+                    label: sLabel,
+                    type: oProperty.type,
+                    numeric: !!mNumeric[oProperty.type],
+                    width: iWidth + "rem"
                 };
             });
         },
@@ -175,8 +230,7 @@ sap.ui.define([
                 new Filter("soc", FilterOperator.EQ, "1000")
             ];
             var oMetaModel = oODataModel.getMetaModel();
-            var oEntitySet = oMetaModel.getODataEntitySet("amministrTrasp");
-            var oEntityType = oEntitySet && oMetaModel.getODataEntityType(oEntitySet.entityType);
+            var oEntityType = this.getEntityType(oODataModel);
             var oDateProperty = oEntityType && oMetaModel.getODataProperty(oEntityType, "dtStorico");
             var fnDateValue = function (sDate) {
                 if (oDateProperty && (oDateProperty.type === "Edm.DateTime" || oDateProperty.type === "Edm.DateTimeOffset")) {
@@ -202,17 +256,7 @@ sap.ui.define([
                     aFilters.push(new Filter("dtStorico", FilterOperator.LE, vSingleDateTo));
                 }
             }
-            [
-                { path: "utente", selections: oSelection.utente },
-                { path: "uniEcon", selections: oSelection.unitaEconomica },
-                { path: "tipoOggArc", selections: oSelection.tipoOggetto },
-                { path: "idOggArc", selections: oSelection.oggettoArchitettonico }
-            ].forEach(function (oField) {
-                var oFilter = this._createReportFieldFilter(oField.path, oField.selections);
-                if (oFilter) {
-                    aFilters.push(oFilter);
-                }
-            }, this);
+            this._pushFieldFilters(aFilters, oEntityType, oSelection, ["utente", "unitaEconomica", "tipoOggetto", "oggettoArchitettonico"]);
             return this._readHistoryPages(oODataModel, {
                 filters: [new Filter({ filters: aFilters, and: true })]
             }, fnSuccess, fnError);
@@ -224,7 +268,7 @@ sap.ui.define([
                     success: function (oData) {
                         aEntries = aEntries.concat(oData.results || []);
                         if (oData.__next) {
-                            var aNext = /(?:^|\/)amministrTrasp(\?.+)$/.exec(oData.__next);
+                            var aNext = new RegExp("(?:^|/)" + ENTITY_SET + "(\\?.+)$").exec(oData.__next);
                             if (!aNext) {
                                 fnError(new Error("Pagina successiva dello storico non valida."));
                                 return;
@@ -233,7 +277,7 @@ sap.ui.define([
                             new URLSearchParams(aNext[1]).forEach(function (sValue, sName) {
                                 mNextParameters[sName] = sValue;
                             });
-                            fnRead("/amministrTrasp", { urlParameters: mNextParameters });
+                            fnRead("/" + ENTITY_SET, { urlParameters: mNextParameters });
                         } else {
                             fnSuccess({ results: aEntries });
                         }
@@ -241,7 +285,7 @@ sap.ui.define([
                     error: fnError
                 }));
             };
-            return fnRead("/amministrTrasp", mParameters);
+            return fnRead("/" + ENTITY_SET, mParameters);
         },
         fetchHistoryUserHelp: function (oODataModel, fnSuccess, fnError) {
             return this._readHistoryPages(oODataModel, {
@@ -311,11 +355,9 @@ sap.ui.define([
             var sDate = String(oNow.getFullYear()) + String(oNow.getMonth() + 1).padStart(2, "0") + String(oNow.getDate()).padStart(2, "0");
             var sTime = String(oNow.getHours()).padStart(2, "0") + String(oNow.getMinutes()).padStart(2, "0") + String(oNow.getSeconds()).padStart(2, "0");
             var sBatchId = "BATCH" + sDate + sTime;
-            var oMetaModel = oODataModel.getMetaModel();
-            var oEntitySet = oMetaModel.getODataEntitySet("amministrTrasp");
-            var oEntityType = oEntitySet && oMetaModel.getODataEntityType(oEntitySet.entityType);
+            var oEntityType = this.getEntityType(oODataModel);
             if (!oEntityType) {
-                throw new Error("Metadata di amministrTrasp non disponibile.");
+                throw new Error("Metadata di " + ENTITY_SET + " non disponibile.");
             }
             var aRows = aEntries.map(function (oEntry) {
                 var oRow = {};
@@ -338,10 +380,16 @@ sap.ui.define([
                 });
                 return oRow;
             });
-            return {
-                batchId: sBatchId,
-                toRighe: aRows
+            var oPayload = {
+                batchId: sBatchId
             };
+            oPayload[this.getBatchNavigationName(oODataModel)] = aRows;
+            return oPayload;
+        },
+        getBatchNavigationName: function (oODataModel) {
+            var oBatchType = this.getEntityType(oODataModel, BATCH_ENTITY_SET);
+            var aNavigations = oBatchType && oBatchType.navigationProperty;
+            return aNavigations && aNavigations.length ? aNavigations[0].name : DEFAULT_BATCH_NAVIGATION;
         },
         saveReportBatch: function (oODataModel, oPayload, fnSuccess, fnError) {
             var sServiceUrl = oODataModel.getServiceUrl().replace(/\/$/, "");
@@ -349,7 +397,7 @@ sap.ui.define([
                 return new Promise(function (resolve, reject) {
                     oODataModel.refreshSecurityToken(function () {
                         jQuery.ajax({
-                            url: sServiceUrl + "/amministrTraspBatch",
+                            url: sServiceUrl + "/" + BATCH_ENTITY_SET,
                             method: "POST",
                             contentType: "application/json",
                             headers: {

@@ -1,7 +1,7 @@
 {
   "_version": "1.85.0",
   "sap.app": {
-    "id": "reportamministrazionetrasparenza",
+    "id": "reportmef",
     "type": "application",
     "i18n": "i18n/i18n.properties",
     "applicationVersion": {
@@ -17,7 +17,7 @@
     },
     "dataSources": {
       "mainService": {
-        "uri": "/sap/opu/odata/sap/ZRE_REPAMMTRASP_SRV/",
+        "uri": "/sap/opu/odata/sap/ZRE_MEF_SRV/",
         "type": "OData",
         "settings": {
           "odataVersion": "2.0",
@@ -27,10 +27,10 @@
     },
     "crossNavigation": {
       "inbounds": {
-        "RL_Report_Admin_Trasparenza-display": {
-          "semanticObject": "RL_Report_Admin_Trasparenza",
+        "RL_Report_MEF-display": {
+          "semanticObject": "RL_Report_MEF",
           "action": "display",
-          "title": "{{RL_Report_Admin_Trasparenza-display.flpTitle}}",
+          "title": "{{RL_Report_MEF-display.flpTitle}}",
           "signature": {
             "parameters": {},
             "additionalParameters": "allowed"
@@ -85,7 +85,7 @@
       "i18n": {
         "type": "sap.ui.model.resource.ResourceModel",
         "settings": {
-          "bundleName": "reportamministrazionetrasparenza.i18n.i18n",
+          "bundleName": "reportmef.i18n.i18n",
           "supportedLocales": [
             "it",
             ""
@@ -109,9 +109,9 @@
         "transition": "slide",
         "type": "View",
         "viewType": "XML",
-        "path": "reportamministrazionetrasparenza.view",
+        "path": "reportmef.view",
         "async": true,
-        "viewPath": "reportamministrazionetrasparenza.view"
+        "viewPath": "reportmef.view"
       },
       "routes": [
         {
@@ -141,7 +141,7 @@
       }
     },
     "rootView": {
-      "viewName": "reportamministrazionetrasparenza.view.App",
+      "viewName": "reportmef.view.App",
       "type": "XML",
       "id": "App",
       "async": true
@@ -149,6 +149,6 @@
   },
   "sap.cloud": {
     "public": true,
-    "service": "reportamministrazionetrasparenza"
+    "service": "reportmef"
   }
 }

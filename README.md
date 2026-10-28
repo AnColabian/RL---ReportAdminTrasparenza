@@ -8,7 +8,7 @@
 |**Template Used**<br>Basic|
 |**Service Type**<br>None|
 |**Service URL**<br>N/A|
-|**Module Name**<br>reportamministrazionetrasparenza|
+|**Module Name**<br>reportmef|
 |**Application Title**<br>Report Amministrazione Trasparenza|
 |**Namespace**<br>|
 |**UI5 Theme**<br>sap_horizon|
@@ -16,7 +16,7 @@
 |**Enable TypeScript**<br>False|
 |**Add Eslint configuration**<br>True, see https://www.npmjs.com/package/@sap-ux/eslint-plugin-fiori-tools#rules for the eslint rules.|
 
-## reportamministrazionetrasparenza
+## reportmef
 
 An SAP Fiori application.
 

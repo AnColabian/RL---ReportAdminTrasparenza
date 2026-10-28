@@ -1,7 +1,7 @@
 /*global QUnit*/
 
 sap.ui.define([
-	"reportamministrazionetrasparenza/controller/View1.controller"
+	"reportmef/controller/View1.controller"
 ], function (Controller) {
 	"use strict";
 

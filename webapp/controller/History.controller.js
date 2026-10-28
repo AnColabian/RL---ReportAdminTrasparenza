@@ -14,7 +14,7 @@ sap.ui.define([
     "sap/m/Input",
     "sap/ui/comp/filterbar/FilterBar",
     "sap/ui/comp/filterbar/FilterItem",
-    "reportamministrazionetrasparenza/control/TableLayoutVariantManager",
+    "reportmef/control/TableLayoutVariantManager",
     "sap/m/Dialog",
     "sap/m/List",
     "sap/m/StandardListItem",
@@ -27,7 +27,7 @@ sap.ui.define([
 ], function (Controller, JSONModel, models, Spreadsheet, exportLibrary, MessageBox, ValueHelpDialog, Table, Column, Label, Text, CheckBox, Input, FilterBar, FilterItem,
     TableLayoutVariantManager, Dialog, List, StandardListItem, Button, SearchField, VBox, HBox, Filter, FilterOperator) {
     "use strict";
-    return Controller.extend("reportamministrazionetrasparenza.controller.History", {
+    return Controller.extend("reportmef.controller.History", {
         Spreadsheet: Spreadsheet,
         models: models,
         onInit: function () {
@@ -38,15 +38,50 @@ sap.ui.define([
                 this.getView().getModel("historyModel").setProperty("/results", []);
             }
             this.byId("resultsTable").setP13nTitle(this._i18n("p13nDialogTitle"));
-            var oVmHistory = this.byId("vmHistory");
-            if (oVmHistory) {
-                this._oHistoryVariantManager = new TableLayoutVariantManager({
-                    table: this.byId("resultsTable"),
-                    variantManagement: oVmHistory,
-                    persistencyKey: "HistoryTableVariants"
-                });
-            }
+            var oODataModel = this.getOwnerComponent().getModel();
+            models._whenMetadataReady(oODataModel).then(function () {
+                this._buildResultColumns("historyModel");
+                var oVmHistory = this.byId("vmHistory");
+                if (oVmHistory) {
+                    this._oHistoryVariantManager = new TableLayoutVariantManager({
+                        table: this.byId("resultsTable"),
+                        variantManagement: oVmHistory,
+                        persistencyKey: "HistoryTableVariants"
+                    });
+                }
+            }.bind(this)).catch(function (oError) {
+                MessageBox.error(this._i18n("msgMetadataError") + (oError && oError.message ? " (" + oError.message + ")" : ""));
+            }.bind(this));
         },
+        _buildResultColumns: function (sModelName) {
+            var oTable = this.byId("resultsTable");
+            var aDefinitions = models.getColumnDefinitions(this.getOwnerComponent().getModel());
+            oTable.destroyColumns();
+            aDefinitions.forEach(function (oDefinition) {
+                var oColumn = new Column({
+                    width: oDefinition.width,
+                    hAlign: oDefinition.numeric ? "End" : "Begin",
+                    label: new Label({ text: oDefinition.label }),
+                    template: new Text({ text: "{" + sModelName + ">" + oDefinition.key + "}", wrapping: false }),
+                    sortProperty: oDefinition.key,
+                    filterProperty: oDefinition.key
+                });
+                oColumn.data("p13nKey", oDefinition.key);
+                oTable.addColumn(oColumn);
+            });
+            return aDefinitions;
+        },
+        _getExportColumns: function () {
+            return this.byId("resultsTable").getColumns().filter(function (oColumn) {
+                return oColumn.getVisible() && !!oColumn.data("p13nKey");
+            }).map(function (oColumn) {
+                return {
+                    label: oColumn.getLabel().getText(),
+                    property: oColumn.data("p13nKey")
+                };
+            });
+        },
+
         onHistoryVariantSave: function (oEvent) {
             oEvent.preventDefault();
             if (!this._oHistoryVariantManager) {
@@ -469,59 +504,10 @@ sap.ui.define([
             if (!aSelectedEntries.length || this.getView().getModel("historyViewModel").getProperty("/busy")) {
                 return;
             }
-            var aColumns = [
-                { label: this._i18n("colSocieta"), property: "societa" },
-                { label: this._i18n("colUnitaEconomica"), property: "unitaEconomica" },
-                { label: this._i18n("colCompendio"), property: "compendio" },
-                { label: this._i18n("colDescrizTipoComp"), property: "descrizTipoComp" },
-                { label: this._i18n("colDefinizioneUE"), property: "definizioneUE" },
-                { label: this._i18n("colDescrBenePatrimoniale"), property: "descrBenePatrimoniale" },
-                { label: this._i18n("colDescrNaturaGiuridica"), property: "descrNaturaGiuridica" },
-                { label: this._i18n("colDescrTitoloUtilizzo"), property: "descrTitoloUtilizzo" },
-                { label: this._i18n("colVia"), property: "via" },
-                { label: this._i18n("colNumeroCivico"), property: "numeroCivico" },
-                { label: this._i18n("colCap"), property: "cap" },
-                { label: this._i18n("colLocalita"), property: "localita" },
-                { label: this._i18n("colRegione"), property: "regione" },
-                { label: this._i18n("colChiavePaesiRegioni"), property: "chiavePaesiRegioni" },
-                { label: this._i18n("colOggettoArchitett"), property: "oggettoArchitett" },
-                { label: this._i18n("colTipoOggArchitett"), property: "tipoOggArchitett" },
-                { label: this._i18n("colDefOggArch"), property: "defOggArch" },
-                { label: this._i18n("colFunzione"), property: "funzione" },
-                { label: this._i18n("colBusinessPartner"), property: "businessPartner" },
-                { label: this._i18n("colDenominazioneDitta"), property: "denominazioneDitta" },
-                { label: this._i18n("colDescrTpEdifTerr"), property: "descrTpEdifTerr" },
-                { label: this._i18n("colDescrBeneCulturale"), property: "descrBeneCulturale" },
-                { label: this._i18n("colIdCatCatastale"), property: "idCatCatastale" },
-                { label: this._i18n("colPercentRivalutaz"), property: "percentRivalutaz" },
-                { label: this._i18n("colCoeffRivalutaz"), property: "coeffRivalutaz" },
-                { label: this._i18n("colNotaAddizionaleImmobile"), property: "notaAddizionaleImmobile" },
-                { label: this._i18n("colStAccatastam"), property: "stAccatastam" },
-                { label: this._i18n("colTipoCatasto"), property: "tipoCatasto" },
-                { label: this._i18n("colDenominatore"), property: "denominatore" },
-                { label: this._i18n("colTipoParticella"), property: "tipoParticella" },
-                { label: this._i18n("colCodComCatTav"), property: "codComCatTav" },
-                { label: this._i18n("colCodiceBelfiore"), property: "codiceBelfiore" },
-                { label: this._i18n("colFoglio"), property: "foglio" },
-                { label: this._i18n("colGraffatoFoglio"), property: "graffatoFoglio" },
-                { label: this._i18n("colSezioneUrbana"), property: "sezioneUrbana" },
-                { label: this._i18n("colSezioneAmministr"), property: "sezioneAmministr" },
-                { label: this._i18n("colParticellaCatasto"), property: "particellaCatasto" },
-                { label: this._i18n("colSub"), property: "sub" },
-                { label: this._i18n("colGraffMapSub"), property: "graffMapSub" },
-                { label: this._i18n("colDescrClasse"), property: "descrClasse" },
-                { label: this._i18n("colVariazioneDal"), property: "variazioneDal" },
-                { label: this._i18n("colVariazioneAl"), property: "variazioneAl" },
-                { label: this._i18n("colSuperficieMq"), property: "superficieMq" },
-                { label: this._i18n("colCubaturaMc"), property: "cubaturaMc" },
-                { label: this._i18n("colRendita"), property: "rendita" },
-                { label: this._i18n("colDataRivRend"), property: "dataRivRend" },
-                { label: this._i18n("colTipoDiCalcolo"), property: "tipoDiCalcolo" },
-                { label: this._i18n("colValOggArch"), property: "valOggArch" },
-                { label: this._i18n("colRedditoDominicale"), property: "redditoDominicale" },
-                { label: this._i18n("colRedditoAgrario"), property: "redditoAgrario" },
-                { label: this._i18n("colNote"), property: "note" }
-            ];
+            var aColumns = this._getExportColumns();
+            if (!aColumns.length) {
+                return;
+            }
             var oSettings = {
                 workbook: { columns: aColumns },
                 dataSource: aSelectedEntries,

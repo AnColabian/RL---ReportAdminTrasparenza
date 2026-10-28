@@ -1,7 +1,7 @@
 /* global QUnit, sinon */
 sap.ui.define([
-    "reportamministrazionetrasparenza/model/models",
-    "reportamministrazionetrasparenza/controller/History.controller",
+    "reportmef/model/models",
+    "reportmef/controller/History.controller",
     "sap/m/MessageBox",
     "sap/m/Token"
 ], function (models, History, MessageBox, Token) {

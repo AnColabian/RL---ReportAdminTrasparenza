@@ -4,12 +4,12 @@ sap.ui.define([
     "sap/ui/comp/variants/VariantItem"
 ], function (BaseObject, JSONModel, VariantItem) {
     "use strict";
-    return BaseObject.extend("reportamministrazionetrasparenza.control.TableLayoutVariantManager", {
+    return BaseObject.extend("reportmef.control.TableLayoutVariantManager", {
         constructor: function (mSettings) {
             this._oTable = mSettings.table;
             this._oVariant = mSettings.variantManagement;
             this._sPersistencyKey = mSettings.persistencyKey;
-            this._sStorageKey = "reportamministrazionetrasparenza.layoutVariants." + this._sPersistencyKey;
+            this._sStorageKey = "reportmef.layoutVariants." + this._sPersistencyKey;
             this._oModel = new JSONModel({
                 defaultKey: "STANDARD",
                 currentKey: "STANDARD",

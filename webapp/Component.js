@@ -1,10 +1,10 @@
 sap.ui.define([
     "sap/ui/core/UIComponent",
-    "reportamministrazionetrasparenza/model/models"
+    "reportmef/model/models"
 ], (UIComponent, models) => {
     "use strict";
 
-    return UIComponent.extend("reportamministrazionetrasparenza.Component", {
+    return UIComponent.extend("reportmef.Component", {
         metadata: {
             manifest: "json",
             interfaces: [

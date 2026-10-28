@@ -1,4 +1,4 @@
-<mvc:View controllerName="reportamministrazionetrasparenza.controller.App"
+<mvc:View controllerName="reportmef.controller.App"
     displayBlock="true"
     xmlns:mvc="sap.ui.core.mvc"
     xmlns="sap.m">

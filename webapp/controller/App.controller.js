@@ -3,7 +3,7 @@ sap.ui.define([
 ], (BaseController) => {
   "use strict";
 
-  return BaseController.extend("reportamministrazionetrasparenza.controller.App", {
+  return BaseController.extend("reportmef.controller.App", {
       onInit() {
       }
   });

@@ -14,7 +14,7 @@ sap.ui.define([
     "sap/m/Input",
     "sap/ui/comp/filterbar/FilterBar",
     "sap/ui/comp/filterbar/FilterItem",
-    "reportamministrazionetrasparenza/control/TableLayoutVariantManager",
+    "reportmef/control/TableLayoutVariantManager",
     "sap/m/Dialog",
     "sap/m/List",
     "sap/m/StandardListItem",
@@ -27,7 +27,7 @@ sap.ui.define([
 ], function (Controller, JSONModel, models, Spreadsheet, exportLibrary, MessageBox, ValueHelpDialog, Table, Column, Label, Text, CheckBox, Input, FilterBar, FilterItem,
     TableLayoutVariantManager, Dialog, List, StandardListItem, Button, SearchField, VBox, HBox, Filter, FilterOperator) {
     "use strict";
-    return Controller.extend("reportamministrazionetrasparenza.controller.Worklist", {
+    return Controller.extend("reportmef.controller.Worklist", {
         Spreadsheet: Spreadsheet,
         models: models,
         onInit: function () {
@@ -42,15 +42,49 @@ sap.ui.define([
         this.getView().getModel("reportModel").setProperty("/results", []);
     }
     this.byId("resultsTable").setP13nTitle(this._i18n("p13nDialogTitle"));
-    var oVmWorklist = this.byId("vmWorklist");
-    if (oVmWorklist) {
-        this._oWorklistVariantManager = new TableLayoutVariantManager({
-            table: this.byId("resultsTable"),
-            variantManagement: oVmWorklist,
-            persistencyKey: "WorklistTableVariants"
-        });
-    }
+    var oODataModel = this.getOwnerComponent().getModel();
+    models._whenMetadataReady(oODataModel).then(function () {
+        this._buildResultColumns("reportModel");
+        var oVmWorklist = this.byId("vmWorklist");
+        if (oVmWorklist) {
+            this._oWorklistVariantManager = new TableLayoutVariantManager({
+                table: this.byId("resultsTable"),
+                variantManagement: oVmWorklist,
+                persistencyKey: "WorklistTableVariants"
+            });
+        }
+    }.bind(this)).catch(function (oError) {
+        MessageBox.error(this._i18n("msgMetadataError") + (oError && oError.message ? " (" + oError.message + ")" : ""));
+    }.bind(this));
 },
+        _buildResultColumns: function (sModelName) {
+            var oTable = this.byId("resultsTable");
+            var aDefinitions = models.getColumnDefinitions(this.getOwnerComponent().getModel());
+            oTable.destroyColumns();
+            aDefinitions.forEach(function (oDefinition) {
+                var oColumn = new Column({
+                    width: oDefinition.width,
+                    hAlign: oDefinition.numeric ? "End" : "Begin",
+                    label: new Label({ text: oDefinition.label }),
+                    template: new Text({ text: "{" + sModelName + ">" + oDefinition.key + "}", wrapping: false }),
+                    sortProperty: oDefinition.key,
+                    filterProperty: oDefinition.key
+                });
+                oColumn.data("p13nKey", oDefinition.key);
+                oTable.addColumn(oColumn);
+            });
+            return aDefinitions;
+        },
+        _getExportColumns: function () {
+            return this.byId("resultsTable").getColumns().filter(function (oColumn) {
+                return oColumn.getVisible() && !!oColumn.data("p13nKey");
+            }).map(function (oColumn) {
+                return {
+                    label: oColumn.getLabel().getText(),
+                    property: oColumn.data("p13nKey")
+                };
+            });
+        },
         onP13nPress: function () {
             var oTable = this.byId("resultsTable");
             var aColumns = oTable.getColumns().map(function (oCol, iIndex) {
@@ -464,7 +498,7 @@ sap.ui.define([
         }.bind(this);
         var fnLoadError = function (oError) {
             oViewModel.setProperty("/busy", false);
-            MessageBox.error("Errore nel caricamento dei dati: " + (oError.statusText || oError.statusCode || ""));
+            MessageBox.error("Errore nel caricamento dei dati: " + (oError.message || oError.statusText || oError.statusCode || ""));
         };
         models.fetchReportData(oODataModel, oSelection, fnLoadSuccess, fnLoadError);
     } catch (oError) {
@@ -531,16 +565,7 @@ sap.ui.define([
             }).filter(function (oEntry) {
                 return !!oEntry;
             });
-            var aColumns = oTable.getColumns().filter(function (oColumn) {
-                return oColumn.getVisible();
-            }).map(function (oColumn) {
-                var oBindingInfo = oColumn.getTemplate().getBindingInfo("text");
-                var oPart = oBindingInfo && oBindingInfo.parts && oBindingInfo.parts[0];
-                return {
-                    label: oColumn.getLabel().getText(),
-                    property: oPart ? oPart.path : oColumn.data("p13nKey")
-                };
-            });
+            var aColumns = this._getExportColumns();
             if (!aSelectedEntries.length || !aColumns.length) {
                 return;
             }
