@@ -32,20 +32,61 @@ sap.ui.define([
         models: models,
         onInit: function () {
             this.getView().setModel(models.createHistoryViewModel(), "historyViewModel");
-            if (!this.getView().getModel("historyModel")) {
-                this.getView().setModel(new JSONModel({ results: [] }), "historyModel");
-            } else if (!Array.isArray(this.getView().getModel("historyModel").getProperty("/results"))) {
-                this.getView().getModel("historyModel").setProperty("/results", []);
-            }
+            this.getView().setModel(new JSONModel({ results: [] }), "historyActionsModel");
+            this.getView().setModel(new JSONModel({ results: [] }), "historyUsersModel");
+            this.getView().setModel(models.createHistoryModel(), "historyModel");
             this.byId("resultsTable").setP13nTitle(this._i18n("p13nDialogTitle"));
-            var oVmHistory = this.byId("vmHistory");
-            if (oVmHistory) {
-                this._oHistoryVariantManager = new TableLayoutVariantManager({
-                    table: this.byId("resultsTable"),
-                    variantManagement: oVmHistory,
-                    persistencyKey: "HistoryTableVariants"
-                });
+        },
+        onHistoryFiltersChange: function () {
+            var oFrom = this.byId("dpFilterDataDa");
+            var oTo = this.byId("dpFilterDataA");
+            var oUser = this.byId("cbFilterUtente");
+            var bInvalidFrom = !!oFrom.getValue() && !oFrom.isValidValue();
+            var bInvalidTo = !!oTo.getValue() && !oTo.isValidValue();
+            var bInvalidRange = !!oFrom.getDateValue() && !!oTo.getDateValue() && oFrom.getDateValue() > oTo.getDateValue();
+            var bInvalidUser = !!oUser.getValue() && !oUser.getSelectedItem();
+            oFrom.setValueState(bInvalidFrom || bInvalidRange ? "Error" : "None");
+            oTo.setValueState(bInvalidTo || bInvalidRange ? "Error" : "None");
+            oFrom.setValueStateText(this._i18n("msgHistoryInvalidDates"));
+            oTo.setValueStateText(this._i18n("msgHistoryInvalidDates"));
+            oUser.setValueState(bInvalidUser ? "Error" : "None");
+            oUser.setValueStateText(this._i18n("msgHistorySelectUser"));
+            if (bInvalidFrom || bInvalidTo || bInvalidRange || bInvalidUser) {
+                return;
             }
+            var aFilters = [];
+            if (oFrom.getValue()) {
+                aFilters.push(new Filter("dataStorico", FilterOperator.GE, oFrom.getValue()));
+            }
+            if (oTo.getValue()) {
+                aFilters.push(new Filter("dataStorico", FilterOperator.LE, oTo.getValue()));
+            }
+            if (oUser.getSelectedKey()) {
+                aFilters.push(new Filter("utente", FilterOperator.EQ, oUser.getSelectedKey()));
+            }
+            this.byId("historyActionsTable").getBinding("rows").filter(aFilters.length ? [
+                new Filter({ filters: aFilters, and: true })
+            ] : [], "Application");
+        },
+        onResetHistoryFilters: function () {
+            var oViewModel = this.getView().getModel("historyViewModel");
+            oViewModel.setProperty("/filterDataStoricizzazioneFrom", "");
+            oViewModel.setProperty("/filterDataStoricizzazioneTo", "");
+            oViewModel.setProperty("/filterUtente", "");
+            this.byId("dpFilterDataDa").setValue("");
+            this.byId("dpFilterDataA").setValue("");
+            this.byId("cbFilterUtente").setSelectedKey("");
+            this.byId("cbFilterUtente").setValue("");
+            this.onHistoryFiltersChange();
+        },
+        onHistoryDetailsPress: function (oEvent) {
+            var oContext = oEvent.getSource().getBindingContext("historyActionsModel");
+            this.getView().getModel("historyViewModel").setProperty("/selectedHistory", oContext.getObject());
+            this.getView().getModel("historyModel").setProperty("/results", []);
+            this.byId("historyDetailsDialog").open();
+        },
+        onCloseHistoryDetails: function () {
+            this.byId("historyDetailsDialog").close();
         },
         onHistoryVariantSave: function (oEvent) {
             oEvent.preventDefault();
@@ -458,15 +499,8 @@ sap.ui.define([
             oHistoryViewModel.setProperty("/exportEnabled", aSelectedIndices.length > 0);
         },
         onExportSelection: function () {
-            var oTable = this.byId("resultsTable");
-            var aSelectedIndices = oTable.getSelectedIndices();
-            var aSelectedEntries = aSelectedIndices.map(function (iIndex) {
-                var oContext = oTable.getContextByIndex(iIndex);
-                return oContext && oContext.getObject();
-            }).filter(function (oEntry) {
-                return !!oEntry;
-            });
-            if (!aSelectedEntries.length || this.getView().getModel("historyViewModel").getProperty("/busy")) {
+            var aEntries = this.getView().getModel("historyModel").getProperty("/results");
+            if (!aEntries.length || this.getView().getModel("historyViewModel").getProperty("/busy")) {
                 return;
             }
             var aColumns = [
@@ -524,7 +558,7 @@ sap.ui.define([
             ];
             var oSettings = {
                 workbook: { columns: aColumns },
-                dataSource: aSelectedEntries,
+                dataSource: aEntries,
                 fileName: this._i18n("storicoTitle") + "_" + this._formatExportTimestamp() + ".xlsx"
             };
             var oSheet = new this.Spreadsheet(oSettings);

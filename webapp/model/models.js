@@ -290,16 +290,17 @@ sap.ui.define([
             });
         },
         createHistoryViewModel: function () {
-            var oModel = new JSONModel({
-                busy: false,
-                filterDataStoricizzazioneFrom: "",
-                filterDataStoricizzazioneTo: "",
-                filterUtente: [],
-                filterLayoutVariant: "",
-                exportEnabled: false
-            });
-            return oModel;
-        },
+    var oModel = new JSONModel({
+        busy: false,
+        filterDataStoricizzazioneFrom: "",
+        filterDataStoricizzazioneTo: "",
+        filterUtente: "",
+        selectedHistory: null,
+        filterLayoutVariant: "",
+        exportEnabled: false
+    });
+    return oModel;
+},
         createHistoryModel: function () {
             var oModel = new JSONModel({
                 results: []
