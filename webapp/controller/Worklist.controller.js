@@ -31,26 +31,26 @@ sap.ui.define([
         Spreadsheet: Spreadsheet,
         models: models,
         onInit: function () {
-    var oViewModel = models.createViewModel();
-    oViewModel.setProperty("/filterSociety", "1000");
-    this.getView().setModel(oViewModel, "viewModel");
-    this.getView().setModel(models.createSocietyModel(), "societyModel");
-    this.getView().setModel(models.createTipoOggettoModel(), "tipoOggettoModel");
-    if (!this.getView().getModel("reportModel")) {
-        this.getView().setModel(new JSONModel({ results: [] }), "reportModel");
-    } else if (!Array.isArray(this.getView().getModel("reportModel").getProperty("/results"))) {
-        this.getView().getModel("reportModel").setProperty("/results", []);
-    }
-    this.byId("resultsTable").setP13nTitle(this._i18n("p13nDialogTitle"));
-    var oVmWorklist = this.byId("vmWorklist");
-    if (oVmWorklist) {
-        this._oWorklistVariantManager = new TableLayoutVariantManager({
-            table: this.byId("resultsTable"),
-            variantManagement: oVmWorklist,
-            persistencyKey: "WorklistTableVariants"
-        });
-    }
-},
+            var oViewModel = models.createViewModel();
+            oViewModel.setProperty("/filterSociety", "1000");
+            this.getView().setModel(oViewModel, "viewModel");
+            this.getView().setModel(models.createSocietyModel(), "societyModel");
+            this.getView().setModel(models.createTipoOggettoModel(), "tipoOggettoModel");
+            if (!this.getView().getModel("reportModel")) {
+                this.getView().setModel(new JSONModel({ results: [] }), "reportModel");
+            } else if (!Array.isArray(this.getView().getModel("reportModel").getProperty("/results"))) {
+                this.getView().getModel("reportModel").setProperty("/results", []);
+            }
+            this.byId("resultsTable").setP13nTitle(this._i18n("p13nDialogTitle"));
+            var oVmWorklist = this.byId("vmWorklist");
+            if (oVmWorklist) {
+                this._oWorklistVariantManager = new TableLayoutVariantManager({
+                    table: this.byId("resultsTable"),
+                    variantManagement: oVmWorklist,
+                    persistencyKey: "WorklistTableVariants"
+                });
+            }
+        },
         onP13nPress: function () {
             var oTable = this.byId("resultsTable");
             var aColumns = oTable.getColumns().map(function (oCol, iIndex) {
@@ -240,6 +240,30 @@ sap.ui.define([
                 });
             }.bind(this), fnError);
         },
+        onValueHelpFunzione: function () {
+            var fnError = function (oError) {
+                this.getView().setBusy(false);
+                var sDetails = oError && (oError.statusCode || oError.statusText || oError.message || "");
+                MessageBox.error(this._i18n("msgValueHelpLoadError") + (sDetails ? " (" + sDetails + ")" : ""));
+            }.bind(this);
+            this.getView().setBusy(true);
+            models.fetchFunzioneHelp(this.getOwnerComponent().getModel(), function (oData) {
+                this.getView().setBusy(false);
+                this._openValueHelpDialog({
+                    field: "miFilterFunzione",
+                    title: this._i18n("lblFunzione"),
+                    key: "funzione",
+                    descriptionKey: "defFunz",
+                    tokenKey: "funzione",
+                    entries: oData.results || [],
+                    columns: [
+                        { property: "tipoOggArc", label: "vhdTipoOggArc", width: "10rem" },
+                        { property: "funzione", label: "vhdFunzione", width: "8rem" },
+                        { property: "defFunz", label: "vhdDefFunz", width: "18rem" }
+                    ]
+                });
+            }.bind(this), fnError);
+        },
         onValueHelpOggettoArchitettonico: function () {
             var sIdOggetto = this.byId("miFilterOggettoArchitettonico").getValue().trim();
             var fnError = function (oError) {
@@ -425,53 +449,54 @@ sap.ui.define([
             return aSelections;
         },
         onExecute: function () {
-    var oView = this.getView();
-    var oODataModel = this.getOwnerComponent().getModel();
-    var oViewModel = oView.getModel("viewModel");
-    if (oViewModel.getProperty("/busy")) {
-        return;
-    }
-    if (!oODataModel) {
-        MessageBox.error("Servizio OData non disponibile.");
-        return;
-    }
-    var oReportModel = oView.getModel("reportModel");
-    if (!oReportModel) {
-        oReportModel = models.createReportModel();
-        oView.setModel(oReportModel, "reportModel");
-    }
-    var oSelection = {
-        societa: oViewModel.getProperty("/filterSociety"),
-        unitaEconomica: this._getReportSelections("miFilterUnitaEconomica"),
-        tipoOggetto: this._getReportSelections("miFilterTipoOggetto"),
-        oggettoArchitettonico: this._getReportSelections("miFilterOggettoArchitettonico")
-    };
-    var bIsTestMode = oViewModel.getProperty("/filterTest");
-    try {
-        oViewModel.setProperty("/busy", true);
-        var fnLoadSuccess = function (oData) {
-            var aRawResults = oData.results || [];
-            var aResults = models.mapReportEntries(aRawResults);
-            oReportModel.setSizeLimit(Math.max(100, aResults.length));
-            oReportModel.setProperty("/results", aResults);
-            this.byId("resultsTable").clearSelection();
-            oViewModel.setProperty("/exportEnabled", false);
-            if (bIsTestMode) {
-                oViewModel.setProperty("/busy", false);
-            } else {
-                this._promptSaveAndSubmitBatch(oODataModel, aRawResults, oViewModel);
+            var oView = this.getView();
+            var oODataModel = this.getOwnerComponent().getModel();
+            var oViewModel = oView.getModel("viewModel");
+            if (oViewModel.getProperty("/busy")) {
+                return;
             }
-        }.bind(this);
-        var fnLoadError = function (oError) {
-            oViewModel.setProperty("/busy", false);
-            MessageBox.error("Errore nel caricamento dei dati: " + (oError.statusText || oError.statusCode || ""));
-        };
-        models.fetchReportData(oODataModel, oSelection, fnLoadSuccess, fnLoadError);
-    } catch (oError) {
-        oViewModel.setProperty("/busy", false);
-        MessageBox.error(oError.message);
-    }
-},
+            if (!oODataModel) {
+                MessageBox.error("Servizio OData non disponibile.");
+                return;
+            }
+            var oReportModel = oView.getModel("reportModel");
+            if (!oReportModel) {
+                oReportModel = models.createReportModel();
+                oView.setModel(oReportModel, "reportModel");
+            }
+            var oSelection = {
+                societa: oViewModel.getProperty("/filterSociety"),
+                unitaEconomica: this._getReportSelections("miFilterUnitaEconomica"),
+                tipoOggetto: this._getReportSelections("miFilterTipoOggetto"),
+                funzione: this._getReportSelections("miFilterFunzione"),
+                oggettoArchitettonico: this._getReportSelections("miFilterOggettoArchitettonico")
+            };
+            var bIsTestMode = oViewModel.getProperty("/filterTest");
+            try {
+                oViewModel.setProperty("/busy", true);
+                var fnLoadSuccess = function (oData) {
+                    var aRawResults = oData.results || [];
+                    var aResults = models.mapReportEntries(aRawResults);
+                    oReportModel.setSizeLimit(Math.max(100, aResults.length));
+                    oReportModel.setProperty("/results", aResults);
+                    this.byId("resultsTable").clearSelection();
+                    oViewModel.setProperty("/exportEnabled", false);
+                    if (bIsTestMode) {
+                        oViewModel.setProperty("/busy", false);
+                    } else {
+                        this._promptSaveAndSubmitBatch(oODataModel, aRawResults, oViewModel);
+                    }
+                }.bind(this);
+                var fnLoadError = function (oError) {
+                    oViewModel.setProperty("/busy", false);
+                    MessageBox.error("Errore nel caricamento dei dati: " + (oError.statusText || oError.statusCode || ""));
+                };
+                models.fetchReportData(oODataModel, oSelection, fnLoadSuccess, fnLoadError);
+            } catch (oError) {
+                oViewModel.setProperty("/busy", false);
+                MessageBox.error(oError.message);
+            }
+        },
         _promptSaveAndSubmitBatch: function (oODataModel, aRawResults, oViewModel) {
             var self = this;
             MessageBox.confirm(this._i18n("msgSaveReportBatch"), {

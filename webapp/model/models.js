@@ -7,7 +7,7 @@ sap.ui.define([
 ], function (JSONModel, Device, Filter, FilterOperator, jQuery) {
     "use strict";
     return {
-        
+
         createDeviceModel: function () {
             var oModel = new JSONModel(Device);
             oModel.setDefaultBindingMode("OneWay");
@@ -53,6 +53,7 @@ sap.ui.define([
             var aFields = [
                 { path: "uniEcon", selections: oSelection.unitaEconomica },
                 { path: "tipoOggArc", selections: oSelection.tipoOggetto },
+                { path: "funzOggArc", selections: oSelection.funzione },
                 { path: "idOggArc", selections: oSelection.oggettoArchitettonico }
             ];
             aFields.forEach(function (oField) {
@@ -159,6 +160,12 @@ sap.ui.define([
                     redditoAgrario: oItem.redAgrAcq,
                     note: oItem.note
                 };
+            });
+        },
+        fetchFunzioneHelp: function (oODataModel, fnSuccess, fnError) {
+            return oODataModel.read("/helpFunz", {
+                success: fnSuccess,
+                error: fnError
             });
         },
         fetchHistoryData: function (oODataModel, oSelection, fnSuccess, fnError) {
@@ -290,17 +297,17 @@ sap.ui.define([
             });
         },
         createHistoryViewModel: function () {
-    var oModel = new JSONModel({
-        busy: false,
-        filterDataStoricizzazioneFrom: "",
-        filterDataStoricizzazioneTo: "",
-        filterUtente: "",
-        selectedHistory: null,
-        filterLayoutVariant: "",
-        exportEnabled: false
-    });
-    return oModel;
-},
+            var oModel = new JSONModel({
+                busy: false,
+                filterDataStoricizzazioneFrom: "",
+                filterDataStoricizzazioneTo: "",
+                filterUtente: "",
+                selectedHistory: null,
+                filterLayoutVariant: "",
+                exportEnabled: false
+            });
+            return oModel;
+        },
         createHistoryModel: function () {
             var oModel = new JSONModel({
                 results: []
