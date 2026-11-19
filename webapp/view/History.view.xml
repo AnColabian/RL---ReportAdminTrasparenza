@@ -60,13 +60,12 @@
                                 <Button text="{i18n>historyResetFiltersBtn}" icon="sap-icon://clear-filter" press=".onResetHistoryFilters" />
                             </VBox>
                         </HBox>
-                        <MessageStrip text="{i18n>msgHistoryServicesPending}" type="Information" showIcon="true" />
                     </VBox>
                 </f:content>
             </f:DynamicPageHeader>
         </f:header>
         <f:content>
-            <t:Table id="historyActionsTable" rows="{historyActionsModel>/results}" selectionMode="None" visibleRowCountMode="Auto" minAutoRowCount="10" rowHeight="32" noData="{i18n>msgHistoryActionsPending}">
+            <t:Table id="historyActionsTable" rows="{historyActionsModel>/results}" selectionMode="None" visibleRowCountMode="Auto" minAutoRowCount="10" rowHeight="32" noData="{i18n>msgHistoryNoData}">
                 <t:extension>
                     <Toolbar>
                         <Title text="{i18n>historyActionsTitle}" level="H4" />
