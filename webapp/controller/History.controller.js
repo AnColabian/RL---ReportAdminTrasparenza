@@ -36,15 +36,53 @@ sap.ui.define([
             this.getView().setModel(new JSONModel({ results: [] }), "historyUsersModel");
             this.getView().setModel(models.createHistoryModel(), "historyModel");
             this.byId("resultsTable").setP13nTitle(this._i18n("p13nDialogTitle"));
+            this._loadHistoryUsers();
+        },
+        _loadHistoryUsers: function () {
+            var oODataModel = this.getOwnerComponent().getModel();
+            var oUsersModel = this.getView().getModel("historyUsersModel");
+            if (!oODataModel) {
+                return;
+            }
+            models.fetchHelpUser(oODataModel, function (oData) {
+                var aUsers = (oData.results || []).map(function (oItem) {
+                    return {
+                        user: oItem.user,
+                        nomeUtente: oItem.nomeUtente,
+                        cognomeUtente: oItem.cognomeUtente,
+                        descrizione: oItem.nomeUtente + " - " + oItem.cognomeUtente
+                    };
+                });
+                oUsersModel.setSizeLimit(Math.max(100, aUsers.length));
+                oUsersModel.setProperty("/results", aUsers);
+            }, function () {
+                MessageBox.error(this._i18n("msgHistoryLoadError"));
+            }.bind(this));
+        },
+        onSuggestUtente: function (oEvent) {
+            var sValue = (oEvent.getParameter("suggestValue") || "").trim();
+            var aFilters = sValue ? [new Filter({
+                filters: [
+                    new Filter("user", FilterOperator.Contains, sValue),
+                    new Filter("nomeUtente", FilterOperator.Contains, sValue),
+                    new Filter("cognomeUtente", FilterOperator.Contains, sValue)
+                ],
+                and: false
+            })] : [];
+            oEvent.getSource().getBinding("suggestionRows").filter(aFilters);
         },
         onHistoryFiltersChange: function () {
             var oFrom = this.byId("dpFilterDataDa");
             var oTo = this.byId("dpFilterDataA");
-            var oUser = this.byId("cbFilterUtente");
+            var oUser = this.byId("inFilterUtente");
+            var sUser = oUser.getValue().trim();
+            var aUsers = this.getView().getModel("historyUsersModel").getProperty("/results") || [];
             var bInvalidFrom = !!oFrom.getValue() && !oFrom.isValidValue();
             var bInvalidTo = !!oTo.getValue() && !oTo.isValidValue();
             var bInvalidRange = !!oFrom.getDateValue() && !!oTo.getDateValue() && oFrom.getDateValue() > oTo.getDateValue();
-            var bInvalidUser = !!oUser.getValue() && !oUser.getSelectedItem();
+            var bInvalidUser = !!sUser && !aUsers.some(function (oItem) {
+                return oItem.user === sUser;
+            });
             oFrom.setValueState(bInvalidFrom || bInvalidRange ? "Error" : "None");
             oTo.setValueState(bInvalidTo || bInvalidRange ? "Error" : "None");
             oFrom.setValueStateText(this._i18n("msgHistoryInvalidDates"));
@@ -61,8 +99,8 @@ sap.ui.define([
             if (oTo.getValue()) {
                 aFilters.push(new Filter("dataStorico", FilterOperator.LE, oTo.getValue()));
             }
-            if (oUser.getSelectedKey()) {
-                aFilters.push(new Filter("utente", FilterOperator.EQ, oUser.getSelectedKey()));
+            if (sUser) {
+                aFilters.push(new Filter("utente", FilterOperator.EQ, sUser));
             }
             this.byId("historyActionsTable").getBinding("rows").filter(aFilters.length ? [
                 new Filter({ filters: aFilters, and: true })
@@ -75,8 +113,7 @@ sap.ui.define([
             oViewModel.setProperty("/filterUtente", "");
             this.byId("dpFilterDataDa").setValue("");
             this.byId("dpFilterDataA").setValue("");
-            this.byId("cbFilterUtente").setSelectedKey("");
-            this.byId("cbFilterUtente").setValue("");
+            this.byId("inFilterUtente").setValue("");
             this.onHistoryFiltersChange();
         },
         onHistoryDetailsPress: function (oEvent) {
@@ -87,6 +124,39 @@ sap.ui.define([
         },
         onCloseHistoryDetails: function () {
             this.byId("historyDetailsDialog").close();
+        },
+        onHistoryExecute: function () {
+            var oViewModel = this.getView().getModel("historyViewModel");
+            if (oViewModel.getProperty("/busy")) {
+                return;
+            }
+            var oODataModel = this.getOwnerComponent().getModel();
+            if (!oODataModel) {
+                MessageBox.error(this._i18n("msgHistoryLoadError"));
+                return;
+            }
+            var fnPad = function (iValue) {
+                return String(iValue).padStart(2, "0");
+            };
+            oViewModel.setProperty("/busy", true);
+            models.fetchHistoryList(oODataModel, function (oData) {
+                var aResults = (oData.results || []).map(function (oItem) {
+                    var oDate = oItem.dataSistema;
+                    var vTime = oItem.oraSistema;
+                    var iMs = vTime && typeof vTime === "object" ? vTime.ms : 0;
+                    return {
+                        dataStorico: oDate instanceof Date ? String(oDate.getUTCFullYear()) + fnPad(oDate.getUTCMonth() + 1) + fnPad(oDate.getUTCDate()) : "",
+                        oraStorico: typeof vTime === "string" ? vTime : fnPad(Math.floor(iMs / 3600000)) + ":" + fnPad(Math.floor(iMs % 3600000 / 60000)) + ":" + fnPad(Math.floor(iMs % 60000 / 1000)),
+                        utente: oItem.nomeUtente,
+                        nomeFile: oItem.nomeFileStoriciz
+                    };
+                });
+                this.getView().getModel("historyActionsModel").setProperty("/results", aResults);
+                oViewModel.setProperty("/busy", false);
+            }.bind(this), function () {
+                oViewModel.setProperty("/busy", false);
+                MessageBox.error(this._i18n("msgHistoryLoadError"));
+            }.bind(this));
         },
         onHistoryVariantSave: function (oEvent) {
             oEvent.preventDefault();

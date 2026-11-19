@@ -3,8 +3,7 @@
     xmlns="sap.m"
     xmlns:f="sap.f"
     xmlns:t="sap.ui.table"
-    xmlns:core="sap.ui.core"
-    displayBlock="true">
+    xmlns:core="sap.ui.core" displayBlock="true">
     <mvc:dependents>
         <core:Fragment fragmentName="reportamministrazionetrasparenza.view.fragment.HistoryDetails" type="XML" />
     </mvc:dependents>
@@ -34,10 +33,28 @@
                                 <DatePicker id="dpFilterDataA" value="{historyViewModel>/filterDataStoricizzazioneTo}" valueFormat="yyyyMMdd" displayFormat="dd.MM.yyyy" width="12rem" change=".onHistoryFiltersChange" />
                             </VBox>
                             <VBox class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
-                                <Label text="{i18n>lblUtente}" labelFor="cbFilterUtente" />
-                                <ComboBox id="cbFilterUtente" selectedKey="{historyViewModel>/filterUtente}" items="{historyUsersModel>/results}" width="14rem" selectionChange=".onHistoryFiltersChange" change=".onHistoryFiltersChange">
-                                    <core:Item key="{historyUsersModel>utente}" text="{historyUsersModel>utente}" />
-                                </ComboBox>
+                                <Label text="{i18n>lblUtente}" labelFor="inFilterUtente" />
+                                <Input id="inFilterUtente" value="{historyViewModel>/filterUtente}" width="18rem" showSuggestion="true" showTableSuggestion="true" startSuggestion="0" filterSuggests="false" suggestionRows="{historyUsersModel>/results}" suggest=".onSuggestUtente" suggestionItemSelected=".onHistoryFiltersChange" change=".onHistoryFiltersChange">
+                                    <suggestionColumns>
+                                        <Column>
+                                            <Label text="{i18n>lblUtente}" />
+                                        </Column>
+                                        <Column>
+                                            <Label text="{i18n>lblNomeCognome}" />
+                                        </Column>
+                                    </suggestionColumns>
+                                    <suggestionRows>
+                                        <ColumnListItem>
+                                            <cells>
+                                                <Label text="{historyUsersModel>user}" />
+                                                <Label text="{historyUsersModel>descrizione}" />
+                                            </cells>
+                                        </ColumnListItem>
+                                    </suggestionRows>
+                                </Input>
+                            </VBox>
+                            <VBox class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                                <Button text="{i18n>eseguiBtn}" type="Emphasized" press=".onHistoryExecute" />
                             </VBox>
                             <VBox class="sapUiSmallMarginBottom">
                                 <Button text="{i18n>historyResetFiltersBtn}" icon="sap-icon://clear-filter" press=".onResetHistoryFilters" />

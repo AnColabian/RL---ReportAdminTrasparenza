@@ -8,7 +8,7 @@
     xmlns:ctl="reportamministrazionetrasparenza.control"
     xmlns:vm="sap.ui.comp.variants"
     xmlns:customData="http://schemas.sap.com/sapui5/extension/sap.ui.core.CustomData/1" displayBlock="true">
-    <f:DynamicPage id="pageWorklist" toggleHeaderOnTitleClick="false">
+    <f:DynamicPage id="pageWorklist" toggleHeaderOnTitleClick="false" busy="{viewModel>/busy}" busyIndicatorDelay="0">
         <f:title>
             <f:DynamicPageTitle>
                 <f:heading>
@@ -50,6 +50,10 @@
                                         </MultiInput>
                                     </VBox>
                                     <VBox class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                                        <Label text="{i18n>lblDataChiusuraOA}" labelFor="dpFilterDataChiusuraOA" />
+                                        <DatePicker id="dpFilterDataChiusuraOA" value="{viewModel>/filterDataChiusuraOA}" valueFormat="yyyyMMdd" displayFormat="dd.MM.yyyy" width="12rem" />
+                                    </VBox>
+                                    <VBox class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
                                         <Label text="{i18n&gt;lblFunzione}" labelFor="miFilterFunzione" />
                                         <MultiInput id="miFilterFunzione" showValueHelp="true" valueHelpRequest=".onValueHelpFunzione" width="10rem" />
                                     </VBox>
@@ -61,8 +65,12 @@
                                             </tokens>
                                         </MultiInput>
                                     </VBox>
-                                    <VBox justifyContent="End" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
-                                        <CheckBox text="{i18n>lblTest}" selected="{viewModel>/filterTest}" />
+                                    <VBox class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
+                                        <Label text="{i18n>lblModalita}" labelFor="rbgFilterModalita" />
+                                        <RadioButtonGroup id="rbgFilterModalita" columns="2" selectedIndex="{viewModel>/filterModalita}">
+                                            <RadioButton text="{i18n>lblModalitaTest}" selected="true"/>
+                                            <RadioButton text="{i18n>lblModalitaStorico}" />
+                                        </RadioButtonGroup>
                                     </VBox>
                                     <VBox justifyContent="End" class="sapUiSmallMarginBottom">
                                         <Button text="{i18n>eseguiBtn}" type="Emphasized" press=".onExecute" />
@@ -95,12 +103,6 @@
                         <Label text="{i18n>colUnitaEconomica}" />
                         <t:template>
                             <Text text="{reportModel>unitaEconomica}" />
-                        </t:template>
-                    </t:Column>
-                    <t:Column width="8rem" customData:p13nKey="compendio">
-                        <Label text="{i18n>colCompendio}" />
-                        <t:template>
-                            <Text text="{reportModel>compendio}" />
                         </t:template>
                     </t:Column>
                     <t:Column width="10rem" customData:p13nKey="descrizTipoComp">
@@ -211,28 +213,10 @@
                             <Text text="{reportModel>descrTpEdifTerr}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="12rem" customData:p13nKey="descrBeneCulturale">
-                        <Label text="{i18n>colDescrBeneCulturale}" />
-                        <t:template>
-                            <Text text="{reportModel>descrBeneCulturale}" />
-                        </t:template>
-                    </t:Column>
                     <t:Column width="9rem" customData:p13nKey="idCatCatastale">
                         <Label text="{i18n>colIdCatCatastale}" />
                         <t:template>
                             <Text text="{reportModel>idCatCatastale}" />
-                        </t:template>
-                    </t:Column>
-                    <t:Column width="9rem" hAlign="End" customData:p13nKey="percentRivalutaz">
-                        <Label text="{i18n>colPercentRivalutaz}" />
-                        <t:template>
-                            <Text text="{reportModel>percentRivalutaz}" />
-                        </t:template>
-                    </t:Column>
-                    <t:Column width="9rem" hAlign="End" customData:p13nKey="coeffRivalutaz">
-                        <Label text="{i18n>colCoeffRivalutaz}" />
-                        <t:template>
-                            <Text text="{reportModel>coeffRivalutaz}" />
                         </t:template>
                     </t:Column>
                     <t:Column width="12rem" customData:p13nKey="notaAddizionaleImmobile">
@@ -325,18 +309,6 @@
                             <Text text="{reportModel>descrClasse}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem" customData:p13nKey="variazioneDal">
-                        <Label text="{i18n>colVariazioneDal}" />
-                        <t:template>
-                            <Text text="{reportModel>variazioneDal}" />
-                        </t:template>
-                    </t:Column>
-                    <t:Column width="9rem" customData:p13nKey="variazioneAl">
-                        <Label text="{i18n>colVariazioneAl}" />
-                        <t:template>
-                            <Text text="{reportModel>variazioneAl}" />
-                        </t:template>
-                    </t:Column>
                     <t:Column width="9rem" hAlign="End" customData:p13nKey="superficieMq">
                         <Label text="{i18n>colSuperficieMq}" />
                         <t:template>
@@ -361,18 +333,6 @@
                             <Text text="{reportModel>dataRivRend}" />
                         </t:template>
                     </t:Column>
-                    <t:Column width="9rem" customData:p13nKey="tipoDiCalcolo">
-                        <Label text="{i18n>colTipoDiCalcolo}" />
-                        <t:template>
-                            <Text text="{reportModel>tipoDiCalcolo}" />
-                        </t:template>
-                    </t:Column>
-                    <t:Column width="9rem" hAlign="End" customData:p13nKey="valOggArch">
-                        <Label text="{i18n>colValOggArch}" />
-                        <t:template>
-                            <Text text="{reportModel>valOggArch}" />
-                        </t:template>
-                    </t:Column>
                     <t:Column width="9rem" hAlign="End" customData:p13nKey="redditoDominicale">
                         <Label text="{i18n>colRedditoDominicale}" />
                         <t:template>
@@ -383,6 +343,42 @@
                         <Label text="{i18n>colRedditoAgrario}" />
                         <t:template>
                             <Text text="{reportModel>redditoAgrario}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="12rem" customData:p13nKey="defFunzione">
+                        <Label text="{i18n>colDefFunzione}" />
+                        <t:template>
+                            <Text text="{reportModel>defFunzione}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="12rem" customData:p13nKey="descrIdCat">
+                        <Label text="{i18n>colDescrIdCat}" />
+                        <t:template>
+                            <Text text="{reportModel>descrIdCat}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="9rem" hAlign="End" customData:p13nKey="renditaVar">
+                        <Label text="{i18n>colRenditaVar}" />
+                        <t:template>
+                            <Text text="{reportModel>renditaVar}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="9rem" customData:p13nKey="dataVarRendita">
+                        <Label text="{i18n>colDataVarRendita}" />
+                        <t:template>
+                            <Text text="{reportModel>dataVarRendita}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="9rem" hAlign="End" customData:p13nKey="redditoDominicaleVar">
+                        <Label text="{i18n>colRedditoDominicaleVar}" />
+                        <t:template>
+                            <Text text="{reportModel>redditoDominicaleVar}" />
+                        </t:template>
+                    </t:Column>
+                    <t:Column width="9rem" hAlign="End" customData:p13nKey="redditoAgrarioVar">
+                        <Label text="{i18n>colRedditoAgrarioVar}" />
+                        <t:template>
+                            <Text text="{reportModel>redditoAgrarioVar}" />
                         </t:template>
                     </t:Column>
                     <t:Column width="14rem" customData:p13nKey="note">

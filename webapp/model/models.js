@@ -22,7 +22,7 @@ sap.ui.define([
                 filterTipoOggetto: [],
                 filterOggettoFrom: "",
                 filterOggettoTo: "",
-                filterTest: true,
+                filterModalita: 0,
                 filterLayoutVariant: "",
                 exportEnabled: false
             });
@@ -62,11 +62,15 @@ sap.ui.define([
                     aFilters.push(oFilter);
                 }
             }, this);
-            return oODataModel.read("/amministrTrasp", {
+            var mParameters = {
                 filters: [new Filter({ filters: aFilters, and: true })],
                 success: fnSuccess,
                 error: fnError
-            });
+            };
+            if (oSelection.dataChiusuraOA) {
+                mParameters.urlParameters = { pData: oSelection.dataChiusuraOA };
+            }
+            return oODataModel.read("/amministrTrasp", mParameters);
         },
         _createReportFieldFilter: function (sPath, aSelections) {
             var aIncluded = [];
@@ -110,55 +114,53 @@ sap.ui.define([
                 return {
                     societa: oItem.soc,
                     unitaEconomica: oItem.uniEcon,
-                    compendio: oItem.compendio,
-                    descrizTipoComp: oItem.descrComp,
-                    definizioneUE: oItem.defUniEcon,
-                    descrBenePatrimoniale: oItem.descrUniEcom,
-                    descrNaturaGiuridica: oItem.desNatGiur,
-                    descrTitoloUtilizzo: oItem.desTitUtil,
+                    descrizTipoComp: oItem.descrTipoCompendio,
+                    definizioneUE: oItem.defUnitEconomica,
+                    descrBenePatrimoniale: oItem.descrBenePatrimon,
+                    descrNaturaGiuridica: oItem.descrNatGiuridica,
+                    descrTitoloUtilizzo: oItem.descrTitUtilizzoBene,
                     via: oItem.viaBe,
                     numeroCivico: oItem.numCivicoBe,
-                    cap: oItem.capBe,
-                    localita: oItem.locBe,
-                    regione: oItem.regBe,
-                    chiavePaesiRegioni: oItem.paeseRegBe,
+                    cap: oItem.codAvvPostBe,
+                    localita: oItem.loc,
+                    regione: oItem.regioneBe,
+                    chiavePaesiRegioni: oItem.chiavePaeseRegioneBe,
                     oggettoArchitett: oItem.idOggArc,
                     tipoOggArchitett: oItem.tipoOggArc,
                     defOggArch: oItem.defOggArc,
-                    funzione: oItem.funz,
-                    businessPartner: oItem.busPartner,
+                    funzione: oItem.funzOggArc,
+                    defFunzione: oItem.defFunzOggArc,
+                    businessPartner: oItem.numBusPart,
                     denominazioneDitta: oItem.denomDitta,
-                    descrTpEdifTerr: oItem.desTpEdTer,
-                    descrBeneCulturale: oItem.descr3,
-                    idCatCatastale: oItem.IdCat,
-                    percentRivalutaz: oItem.percRiv,
-                    coeffRivalutaz: oItem.coeffRiv,
-                    notaAddizionaleImmobile: oItem.desAdd,
-                    stAccatastam: oItem.stAccatast,
+                    descrTpEdifTerr: oItem.descrTipoEdifTerreno,
+                    idCatCatastale: oItem.idCatCatastale,
+                    descrIdCat: oItem.descrIdCat,
+                    notaAddizionaleImmobile: oItem.note1,
+                    stAccatastam: oItem.statoAccatastamento,
                     tipoCatasto: oItem.tipoCatasto,
                     denominatore: oItem.denominatore,
-                    tipoParticella: oItem.tipoPart,
-                    codComCatTav: oItem.codComCat,
-                    codiceBelfiore: oItem.codBelf,
+                    tipoParticella: oItem.tipoParticella,
+                    codComCatTav: oItem.codComuneCatastTav,
+                    codiceBelfiore: oItem.codBelfiore,
                     foglio: oItem.foglio,
-                    graffatoFoglio: oItem.graffFoglio,
-                    sezioneUrbana: oItem.sezUrb,
-                    sezioneAmministr: oItem.sezAmmin,
-                    particellaCatasto: oItem.part,
+                    graffatoFoglio: oItem.graffiatoFoglio,
+                    sezioneUrbana: oItem.sezUrbana,
+                    sezioneAmministr: oItem.sezAmministr,
+                    particellaCatasto: oItem.mappale,
                     sub: oItem.sub,
-                    graffMapSub: oItem.grMapSub,
-                    descrClasse: oItem.descr4,
-                    variazioneDal: oItem.variazDal || "",
-                    variazioneAl: oItem.variazAl || "",
-                    superficieMq: oItem.dim1,
-                    cubaturaMc: oItem.dim2,
-                    rendita: oItem.rendAcq,
-                    dataRivRend: oItem.dataAcqRend || "",
-                    tipoDiCalcolo: oItem.tipoCalc,
-                    valOggArch: oItem.valOggArch,
-                    redditoDominicale: oItem.redDomAcq,
-                    redditoAgrario: oItem.redAgrAcq,
-                    note: oItem.note
+                    graffMapSub: oItem.graffiatoMappSub,
+                    descrClasse: oItem.descrClasse,
+                    superficieMq: oItem.valMisuraDisp1,
+                    cubaturaMc: oItem.valMisuraDips2,
+                    rendita: oItem.renditaAcq,
+                    dataRivRend: oItem.dataAcqRendita || "",
+                    renditaVar: oItem.renditaVar,
+                    dataVarRendita: oItem.dataVarRendita || "",
+                    redditoDominicale: oItem.redditoDominicaleAcq,
+                    redditoAgrario: oItem.redditoAgrarioAcq,
+                    redditoDominicaleVar: oItem.redditoDominicaleVar,
+                    redditoAgrarioVar: oItem.redditoAgrarioVar,
+                    note: oItem.noteOa
                 };
             });
         },
@@ -176,6 +178,12 @@ sap.ui.define([
             }).then(function () {
                 return this._fetchHistoryData(oODataModel, oSelection, fnSuccess, fnError);
             }.bind(this)).catch(fnError);
+        },
+        fetchHistoryList: function (oODataModel, fnSuccess, fnError) {
+            return oODataModel.read("/helpMefh", {
+                success: fnSuccess,
+                error: fnError
+            });
         },
         _fetchHistoryData: function (oODataModel, oSelection, fnSuccess, fnError) {
             var aFilters = [
@@ -223,6 +231,12 @@ sap.ui.define([
             return this._readHistoryPages(oODataModel, {
                 filters: [new Filter({ filters: aFilters, and: true })]
             }, fnSuccess, fnError);
+        },
+        fetchHelpUser: function (oODataModel, fnSuccess, fnError) {
+            return oODataModel.read("/helpUser", {
+                success: fnSuccess,
+                error: fnError
+            });
         },
         _readHistoryPages: function (oODataModel, mParameters, fnSuccess, fnError) {
             var aEntries = [];

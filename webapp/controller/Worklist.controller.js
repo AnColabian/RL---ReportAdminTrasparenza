@@ -469,9 +469,10 @@ sap.ui.define([
                 unitaEconomica: this._getReportSelections("miFilterUnitaEconomica"),
                 tipoOggetto: this._getReportSelections("miFilterTipoOggetto"),
                 funzione: this._getReportSelections("miFilterFunzione"),
-                oggettoArchitettonico: this._getReportSelections("miFilterOggettoArchitettonico")
+                oggettoArchitettonico: this._getReportSelections("miFilterOggettoArchitettonico"),
+                dataChiusuraOA: oViewModel.getProperty("/filterDataChiusuraOA")
             };
-            var bIsTestMode = oViewModel.getProperty("/filterTest");
+            var bIsTestMode = oViewModel.getProperty("/filterModalita") === 0;
             try {
                 oViewModel.setProperty("/busy", true);
                 var fnLoadSuccess = function (oData) {
